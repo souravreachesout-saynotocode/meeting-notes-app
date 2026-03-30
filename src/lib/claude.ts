@@ -7,6 +7,7 @@ const anthropic = new Anthropic({
 const MODEL = "claude-sonnet-4-20250514";
 
 export async function summarizeMeeting(transcript: string): Promise<{
+  title: string;
   summary: string;
   action_items: { text: string; assignee?: string; due_date?: string; completed: boolean }[];
   key_decisions: { text: string }[];
@@ -23,6 +24,7 @@ The transcript may contain Hindi, English, or a mix of both. Summarize in Englis
 
 Respond ONLY with a JSON object in this exact format (no markdown, no code fences):
 {
+  "title": "A short, descriptive title for this meeting (5-10 words max, like 'Weekly AI Updates' or 'Q2 Budget Review with Finance Team')",
   "summary": "A concise 2-4 paragraph summary of the meeting covering main topics discussed, key points, and outcomes.",
   "action_items": [
     {"text": "Description of action item", "assignee": "Person responsible (if mentioned)", "due_date": "Deadline (if mentioned)", "completed": false}

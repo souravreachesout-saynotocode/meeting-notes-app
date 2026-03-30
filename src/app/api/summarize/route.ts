@@ -48,10 +48,26 @@ export async function POST(request: NextRequest) {
       { onConflict: "meeting_id" }
     );
 
-    // Mark as completed
+    // Mark as completed + update AI-generated title
+    const currentMeeting = await supabase
+      .from("meetings")
+      .select("title")
+      .eq("id", meeting_id)
+      .single();
+
+    const updateData: Record<string, string> = { status: "completed" };
+    // Only set AI title if user hasn't set a custom one
+    if (
+      result.title &&
+      (!currentMeeting.data?.title ||
+        currentMeeting.data.title === "Untitled Meeting")
+    ) {
+      updateData.title = result.title;
+    }
+
     await supabase
       .from("meetings")
-      .update({ status: "completed" })
+      .update(updateData)
       .eq("id", meeting_id);
 
     return NextResponse.json({ success: true, ...result });
