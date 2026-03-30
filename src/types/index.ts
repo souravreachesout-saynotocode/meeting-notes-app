@@ -7,6 +7,7 @@ export type {
   ChatMessage,
   MeetingStatus,
   RecordingMode,
+  Folder,
 } from "@/lib/supabase/types";
 
 export interface MeetingWithDetails extends Omit<import("@/lib/supabase/types").Meeting, never> {

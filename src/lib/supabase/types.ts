@@ -17,6 +17,7 @@ export interface Meeting {
   audio_path: string | null;
   audio_size_bytes: number | null;
   error_message: string | null;
+  folder_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -57,4 +58,12 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   created_at: string;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  icon: string;
+  created_at: string;
+  updated_at: string;
 }
