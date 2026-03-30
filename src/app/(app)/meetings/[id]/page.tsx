@@ -106,7 +106,7 @@ export default function MeetingDetailPage({
       await supabase.storage.from("meeting-audio").remove([meeting.audio_path]);
     }
     await supabase.from("meetings").delete().eq("id", id);
-    router.push("/");
+    router.push("/dashboard");
   };
 
   const handleRetry = async () => {
@@ -133,7 +133,7 @@ export default function MeetingDetailPage({
     return (
       <div className="flex-1 p-6 md:p-10 text-center">
         <p className="text-white/50">Meeting not found</p>
-        <Link href="/">
+        <Link href="/dashboard">
           <Button variant="link" className="text-white/60">Go back</Button>
         </Link>
       </div>
@@ -148,7 +148,7 @@ export default function MeetingDetailPage({
     <div className="flex-1 p-6 md:p-10 max-w-4xl">
       {/* Header */}
       <div className="flex items-start gap-3 mb-8">
-        <Link href="/">
+        <Link href="/dashboard">
           <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10 mt-1">
             <ArrowLeft className="h-4 w-4" />
           </Button>

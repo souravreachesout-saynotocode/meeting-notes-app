@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { SidebarWrapper } from "@/components/sidebar-wrapper";
 
 export const metadata: Metadata = {
   title: "MeetScribe",
@@ -14,9 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className="min-h-full flex flex-col antialiased">
-        <SidebarWrapper>{children}</SidebarWrapper>
-      </body>
+      <body className="min-h-full flex flex-col antialiased">{children}</body>
     </html>
   );
 }

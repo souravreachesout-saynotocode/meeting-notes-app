@@ -58,7 +58,7 @@ export function Sidebar() {
   };
 
   const navItems = [
-    { href: "/", label: "Home", icon: Home },
+    { href: "/dashboard", label: "Home", icon: Home },
     { href: "/search", label: "Search", icon: Search, shortcut: "⌘K" },
     { href: "/chat", label: "Chat", icon: MessageSquare },
   ];
@@ -67,7 +67,7 @@ export function Sidebar() {
     <>
       {/* Mobile header */}
       <div className="md:hidden flex items-center justify-between border-b border-white/10 px-4 h-14 bg-[#1a1a1a]">
-        <Link href="/" className="font-bold text-lg text-white">
+        <Link href="/dashboard" className="font-bold text-lg text-white">
           MeetScribe
         </Link>
         <div className="flex items-center gap-2">
@@ -102,8 +102,8 @@ export function Sidebar() {
         <nav className="p-3 space-y-0.5">
           {navItems.map((item) => {
             const isActive =
-              item.href === "/"
-                ? pathname === "/"
+              item.href === "/dashboard"
+                ? pathname === "/dashboard"
                 : pathname.startsWith(item.href);
             return (
               <Link
@@ -137,7 +137,7 @@ export function Sidebar() {
 
           {/* My notes - default space */}
           <Link
-            href="/?folder=my-notes"
+            href="/dashboard?folder=my-notes"
             onClick={() => setOpen(false)}
             className={cn(
               "flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-colors",
@@ -154,7 +154,7 @@ export function Sidebar() {
           {folders.map((folder) => (
             <Link
               key={folder.id}
-              href={`/?folder=${folder.id}`}
+              href={`/dashboard?folder=${folder.id}`}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-3 py-1.5 rounded-md text-sm text-white/60 hover:bg-white/5 hover:text-white transition-colors"
             >
