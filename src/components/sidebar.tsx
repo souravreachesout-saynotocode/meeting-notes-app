@@ -176,14 +176,27 @@ export function Sidebar() {
                 placeholder="Folder name"
                 className="h-7 text-xs bg-white/5 border-white/10 text-white placeholder:text-white/30"
                 autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setCreatingFolder(false);
+                    setNewFolderName("");
+                  }
+                }}
                 onBlur={() => {
-                  if (!newFolderName.trim()) setCreatingFolder(false);
+                  // Delay to allow form submit to fire first
+                  setTimeout(() => {
+                    setCreatingFolder(false);
+                    setNewFolderName("");
+                  }, 200);
                 }}
               />
             </form>
           ) : (
             <button
-              onClick={() => setCreatingFolder(true)}
+              onClick={() => {
+                setCreatingFolder(true);
+                setNewFolderName("");
+              }}
               className="flex items-center gap-3 px-3 py-1.5 rounded-md text-sm text-white/40 hover:text-white/60 transition-colors w-full"
             >
               <FolderPlus className="h-4 w-4" />
