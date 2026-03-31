@@ -19,6 +19,7 @@ import {
   Plus,
   LogOut,
   User,
+  Users,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -64,6 +65,7 @@ export function Sidebar() {
 
   const navItems = [
     { href: "/dashboard", label: "Home", icon: Home },
+    { href: "/shared", label: "Shared with me", icon: Users },
     { href: "/search", label: "Search", icon: Search, shortcut: "⌘K" },
   ];
 

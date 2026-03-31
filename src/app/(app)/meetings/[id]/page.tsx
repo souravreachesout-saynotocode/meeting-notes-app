@@ -9,9 +9,11 @@ import { POLLING_INTERVAL_MS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ShareDialog } from "@/components/share-dialog";
 import {
   ArrowLeft,
   MessageSquare,
+  Share2,
   Download,
   Loader2,
   CheckCircle2,
@@ -41,6 +43,7 @@ export default function MeetingDetailPage({
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [tags, setTags] = useState<{ name: string; color: string }[]>([]);
+  const [showShare, setShowShare] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -260,6 +263,10 @@ export default function MeetingDetailPage({
                   Chat
                 </Button>
               </Link>
+              <Button size="sm" onClick={() => setShowShare(true)} className="bg-white/10 hover:bg-white/15 text-white border-0">
+                <Share2 className="mr-2 h-3.5 w-3.5" />
+                Share
+              </Button>
               <a href={`/api/export/${id}`} download>
                 <Button size="sm" className="bg-white/10 hover:bg-white/15 text-white border-0">
                   <Download className="mr-2 h-3.5 w-3.5" />
@@ -384,6 +391,11 @@ export default function MeetingDetailPage({
             </div>
           </TabsContent>
         </Tabs>
+      )}
+
+      {/* Share Dialog */}
+      {showShare && (
+        <ShareDialog meetingId={id} onClose={() => setShowShare(false)} />
       )}
     </div>
   );
