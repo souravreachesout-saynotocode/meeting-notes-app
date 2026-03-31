@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import { useScreenRecorder } from "@/hooks/use-screen-recorder";
 import { createClient } from "@/lib/supabase/client";
@@ -31,8 +31,9 @@ function formatDuration(seconds: number): string {
 
 export default function RecordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<RecordingMode>("microphone");
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(searchParams.get("title") || "");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 

@@ -288,7 +288,14 @@ export default function DashboardPage() {
                             </div>
                             <div className="flex-1 py-1 md:py-2 border-l border-white/10">
                               {events.map((event) => (
-                                <div key={event.id} className="flex items-center gap-3 px-3 md:px-4 py-2.5 hover:bg-white/5 transition-colors">
+                                <div
+                                  key={event.id}
+                                  className="flex items-center gap-3 px-3 md:px-4 py-2.5 hover:bg-white/[0.07] transition-colors cursor-pointer group relative"
+                                  onClick={() => {
+                                    // Navigate to record page with pre-filled title from calendar event
+                                    window.location.href = `/record?title=${encodeURIComponent(event.title)}`;
+                                  }}
+                                >
                                   <div className="w-0.5 h-8 rounded-full bg-blue-500 shrink-0" />
                                   <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-white/90 truncate">{event.title}</p>
@@ -301,7 +308,8 @@ export default function DashboardPage() {
                                       href={event.meetLink}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 shrink-0"
+                                      className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 shrink-0 z-10"
+                                      onClick={(e) => e.stopPropagation()}
                                     >
                                       <Video className="h-3.5 w-3.5" />
                                       <span className="hidden md:inline">Join</span>
