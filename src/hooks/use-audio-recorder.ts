@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { MAX_RECORDING_SECONDS } from "@/lib/constants";
 
 interface UseAudioRecorderReturn {
   isRecording: boolean;
@@ -26,12 +27,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const startTimer = useCallback(() => {
-    timerRef.current = setInterval(() => {
-      setDuration((prev) => prev + 1);
-    }, 1000);
-  }, []);
+  const durationRef = useRef(0);
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) {
@@ -40,12 +36,34 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     }
   }, []);
 
+  const doStop = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setIsPaused(false);
+      stopTimer();
+    }
+  }, [stopTimer]);
+
+  const startTimer = useCallback(() => {
+    timerRef.current = setInterval(() => {
+      durationRef.current += 1;
+      setDuration(durationRef.current);
+
+      // Auto-stop at max duration
+      if (durationRef.current >= MAX_RECORDING_SECONDS) {
+        doStop();
+      }
+    }, 1000);
+  }, [doStop]);
+
   const startRecording = useCallback(async () => {
     try {
       setError(null);
       setAudioBlob(null);
       chunksRef.current = [];
       setDuration(0);
+      durationRef.current = 0;
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -81,7 +99,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       };
 
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(10000); // collect data every 10 seconds
+      // Collect data every 30 seconds for smoother chunking
+      mediaRecorder.start(30000);
       setIsRecording(true);
       setIsPaused(false);
       startTimer();
@@ -95,13 +114,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   }, [startTimer, stopTimer]);
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setIsPaused(false);
-      stopTimer();
-    }
-  }, [stopTimer]);
+    doStop();
+  }, [doStop]);
 
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
@@ -120,12 +134,13 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   }, [startTimer]);
 
   const resetRecording = useCallback(() => {
-    stopRecording();
+    doStop();
     setAudioBlob(null);
     setDuration(0);
+    durationRef.current = 0;
     setError(null);
     chunksRef.current = [];
-  }, [stopRecording]);
+  }, [doStop]);
 
   useEffect(() => {
     return () => {

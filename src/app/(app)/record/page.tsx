@@ -172,14 +172,19 @@ export default function RecordPage() {
 
         {/* Status */}
         {isRecording && (
-          <div className="flex items-center gap-2">
-            <span
-              className={`h-2 w-2 rounded-full ${
-                isPaused ? "bg-yellow-500" : "bg-red-500 animate-pulse"
-              }`}
-            />
-            <span className="text-sm text-white/50">
-              {isPaused ? "Paused" : "Recording"}
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center gap-2">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  isPaused ? "bg-yellow-500" : "bg-red-500 animate-pulse"
+                }`}
+              />
+              <span className="text-sm text-white/50">
+                {isPaused ? "Paused" : "Recording"}
+              </span>
+            </div>
+            <span className="text-xs text-white/20">
+              Max 3 hours · {formatDuration(10800 - duration)} remaining
             </span>
           </div>
         )}
