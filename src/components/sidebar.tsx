@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,8 @@ import {
   Menu,
   X,
   Plus,
+  LogOut,
+  User,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -25,17 +27,20 @@ export function Sidebar() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    async function fetchFolders() {
+    async function fetchData() {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("folders")
-        .select("*")
-        .order("created_at", { ascending: true });
-      setFolders(data || []);
+      const [foldersRes, userRes] = await Promise.all([
+        supabase.from("folders").select("*").order("created_at", { ascending: true }),
+        supabase.auth.getUser(),
+      ]);
+      setFolders(foldersRes.data || []);
+      setUserEmail(userRes.data.user?.email || null);
     }
-    fetchFolders();
+    fetchData();
   }, []);
 
   const handleCreateFolder = async () => {
@@ -205,14 +210,39 @@ export function Sidebar() {
           )}
         </div>
 
-        {/* Bottom - Record button */}
-        <div className="mt-auto p-3 border-t border-white/5">
-          <Link href="/record" onClick={() => setOpen(false)}>
+        {/* Bottom - User + Record */}
+        <div className="mt-auto border-t border-white/5">
+          <Link href="/record" onClick={() => setOpen(false)} className="block p-3">
             <Button className="w-full bg-white/10 hover:bg-white/15 text-white border-0 text-sm">
               <Mic className="mr-2 h-4 w-4" />
               New Recording
             </Button>
           </Link>
+
+          {/* User profile */}
+          {userEmail && (
+            <div className="px-3 pb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="h-7 w-7 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                  <User className="h-3.5 w-3.5 text-white/50" />
+                </div>
+                <span className="text-xs text-white/40 truncate">
+                  {userEmail}
+                </span>
+              </div>
+              <button
+                onClick={async () => {
+                  const supabase = createClient();
+                  await supabase.auth.signOut();
+                  router.push("/login");
+                }}
+                className="text-white/20 hover:text-white/50 transition-colors shrink-0 ml-2"
+                title="Log out"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       </aside>
     </>
