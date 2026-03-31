@@ -70,6 +70,8 @@ export default function RecordPage() {
     try {
       const supabase = createClient();
 
+      const { data: { user } } = await supabase.auth.getUser();
+
       const { data: meeting, error: meetingError } = await supabase
         .from("meetings")
         .insert({
@@ -77,13 +79,14 @@ export default function RecordPage() {
           recording_mode: mode,
           status: "transcribing",
           duration_seconds: duration,
+          user_id: user?.id,
         })
         .select()
         .single();
 
       if (meetingError) throw meetingError;
 
-      const audioPath = `${meeting.id}.webm`;
+      const audioPath = `${user?.id}/${meeting.id}.webm`;
       const { error: storageError } = await supabase.storage
         .from(AUDIO_BUCKET)
         .upload(audioPath, audioBlob, {

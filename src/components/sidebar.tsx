@@ -48,9 +48,10 @@ export function Sidebar() {
     if (!name) return;
 
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
     const { data } = await supabase
       .from("folders")
-      .insert({ name })
+      .insert({ name, user_id: user?.id })
       .select()
       .single();
 

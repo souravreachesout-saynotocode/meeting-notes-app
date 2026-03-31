@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { summarizeMeeting, MODEL } from "@/lib/claude";
+import { rateLimit, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
+import { retryQueue } from "@/lib/retry-queue";
 
 export const maxDuration = 120;
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for") || "anonymous";
+  const rl = rateLimit(`summarize:${ip}`, RATE_LIMITS.summarize);
+  if (!rl.allowed) return rateLimitResponse(rl.resetAt);
+
   const { meeting_id } = await request.json();
 
   if (!meeting_id) {
@@ -80,6 +86,13 @@ export async function POST(request: NextRequest) {
       .update({ status: "error", error_message: errorMessage })
       .eq("id", meeting_id);
 
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    // Add to retry queue
+    retryQueue.setBaseUrl(request.nextUrl.origin);
+    const willRetry = retryQueue.add(meeting_id, "summarize");
+
+    return NextResponse.json(
+      { error: errorMessage, willRetry },
+      { status: 500 }
+    );
   }
 }

@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { transcribeAudio } from "@/lib/openai";
 import { AUDIO_BUCKET } from "@/lib/constants";
+import { rateLimit, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
+import { retryQueue } from "@/lib/retry-queue";
 
 export const maxDuration = 300; // 5 minutes timeout
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for") || "anonymous";
+  const rl = rateLimit(`transcribe:${ip}`, RATE_LIMITS.transcribe);
+  if (!rl.allowed) return rateLimitResponse(rl.resetAt);
+
   const { meeting_id } = await request.json();
 
   if (!meeting_id) {
@@ -86,6 +92,13 @@ export async function POST(request: NextRequest) {
       .update({ status: "error", error_message: errorMessage })
       .eq("id", meeting_id);
 
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    // Add to retry queue
+    retryQueue.setBaseUrl(request.nextUrl.origin);
+    const willRetry = retryQueue.add(meeting_id, "transcribe");
+
+    return NextResponse.json(
+      { error: errorMessage, willRetry },
+      { status: 500 }
+    );
   }
 }
