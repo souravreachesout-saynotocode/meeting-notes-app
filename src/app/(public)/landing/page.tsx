@@ -21,8 +21,8 @@ const features = [
   },
   {
     icon: Globe,
-    title: "Hindi + English",
-    desc: "Auto-detects and transcribes both Hindi and English seamlessly",
+    title: "97 Languages",
+    desc: "Auto-detects and transcribes 97 languages including Hindi, English, Tamil, Telugu, Spanish, French, and more",
   },
   {
     icon: Brain,
@@ -116,6 +116,33 @@ export default function LandingPage() {
               <p className="text-sm text-white/40 leading-relaxed">{f.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Languages */}
+      <section className="px-6 md:px-12 py-16 max-w-5xl mx-auto">
+        <h2 className="text-sm font-medium text-white/30 uppercase tracking-wider text-center mb-6">
+          Transcribes 97 languages
+        </h2>
+        <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
+          {[
+            "English", "Hindi", "Tamil", "Telugu", "Bengali", "Marathi",
+            "Gujarati", "Kannada", "Malayalam", "Punjabi", "Urdu",
+            "Spanish", "French", "German", "Portuguese", "Chinese",
+            "Japanese", "Korean", "Arabic", "Russian", "Italian",
+            "Dutch", "Turkish", "Vietnamese", "Thai", "Indonesian",
+            "Swedish", "Polish", "Ukrainian", "Czech",
+          ].map((lang) => (
+            <span
+              key={lang}
+              className="px-2.5 py-1 rounded-full text-xs text-white/50 bg-white/[0.04] border border-white/[0.06]"
+            >
+              {lang}
+            </span>
+          ))}
+          <span className="px-2.5 py-1 rounded-full text-xs text-white/30 bg-white/[0.02] border border-white/[0.04]">
+            +67 more
+          </span>
         </div>
       </section>
 
