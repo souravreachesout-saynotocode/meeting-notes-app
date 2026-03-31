@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Mic,
-  Brain,
   MessageSquare,
   Search,
   FolderOpen,
@@ -12,9 +11,9 @@ import {
   Sparkles,
   Globe,
   Headphones,
-  Languages,
   Share2,
   Zap,
+  Brain,
 } from "lucide-react";
 
 const features = [
@@ -135,7 +134,7 @@ export default function LandingPage() {
             Record meetings, get AI transcriptions in 97 languages, instant summaries with action items, and chat with your notes.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/signup">
               <Button size="lg" className="bg-emerald-500 hover:bg-emerald-400 text-white h-13 px-8 text-base font-medium shadow-lg shadow-emerald-500/25">
                 Start for free
@@ -147,60 +146,6 @@ export default function LandingPage() {
                 Log in
               </Button>
             </Link>
-          </div>
-
-          {/* Hero graphic — microphone with sound waves */}
-          <div className="relative max-w-lg mx-auto">
-            <div className="relative bg-[#151515] rounded-2xl border border-white/10 p-8 shadow-2xl">
-              {/* Microphone icon with animated rings */}
-              <div className="flex items-center justify-center mb-6">
-                <div className="relative">
-                  <div className="absolute inset-0 w-20 h-20 rounded-full bg-emerald-500/20 animate-ping" style={{ animationDuration: "2s" }} />
-                  <div className="absolute inset-2 w-16 h-16 rounded-full bg-emerald-500/10 animate-ping" style={{ animationDuration: "2.5s" }} />
-                  <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                    <Mic className="h-8 w-8 text-white" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Fake waveform */}
-              <div className="flex items-center justify-center gap-[3px] h-12 mb-6">
-                {Array.from({ length: 40 }).map((_, i) => {
-                  const height = Math.sin(i * 0.4) * 30 + ((i * 7 + 13) % 15) + 8;
-                  return (
-                    <div
-                      key={i}
-                      className="w-[3px] rounded-full bg-gradient-to-t from-emerald-500/60 to-emerald-400/80"
-                      style={{ height: `${height}px` }}
-                    />
-                  );
-                })}
-              </div>
-
-              {/* Script samples flowing */}
-              <div className="space-y-2">
-                {scripts.slice(0, 4).map((s, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.03]"
-                  >
-                    <div className="w-1 h-6 rounded-full bg-emerald-500/60" />
-                    <span className="text-sm text-white/70">{s.text}</span>
-                    <span className="text-[10px] text-white/20 ml-auto">{s.lang}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Floating badges */}
-            <div className="absolute -top-3 -right-3 px-3 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-400 text-xs font-medium flex items-center gap-1.5">
-              <Brain className="h-3 w-3" />
-              AI Summary
-            </div>
-            <div className="absolute -bottom-3 -left-3 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-medium flex items-center gap-1.5">
-              <Languages className="h-3 w-3" />
-              97 Languages
-            </div>
           </div>
         </div>
       </section>
