@@ -67,6 +67,29 @@ export default function RecordPage() {
     setIsUploading(true);
     setUploadError(null);
 
+    // Check if offline — save locally for later sync
+    if (!navigator.onLine) {
+      try {
+        if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            type: "QUEUE_UPLOAD",
+            payload: {
+              title: title.trim() || "Untitled Meeting",
+              recording_mode: mode,
+              duration_seconds: duration,
+              timestamp: Date.now(),
+            },
+          });
+        }
+        setIsUploading(false);
+        alert("You're offline. The recording has been saved and will sync when you're back online.");
+        router.push("/dashboard");
+        return;
+      } catch {
+        // Fall through to normal upload attempt
+      }
+    }
+
     try {
       const supabase = createClient();
 

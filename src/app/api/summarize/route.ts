@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { summarizeMeeting, MODEL, getTagColor } from "@/lib/claude";
 import { rateLimit, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
 import { retryQueue } from "@/lib/retry-queue";
+import { trackUsage } from "@/lib/usage";
 
 export const maxDuration = 120;
 
@@ -124,6 +125,13 @@ export async function POST(request: NextRequest) {
       }
     } catch {
       // Embedding generation is non-critical, don't fail the whole flow
+    }
+
+    // Track usage
+    const { data: meetingOwner } = await supabase.from("meetings").select("user_id").eq("id", meeting_id).single();
+    if (meetingOwner?.user_id) {
+      await trackUsage(meetingOwner.user_id, "claude-summarize");
+      if (result.tags?.length) await trackUsage(meetingOwner.user_id, "openai-embedding");
     }
 
     return NextResponse.json({ success: true, ...result });

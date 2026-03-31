@@ -4,6 +4,7 @@ import { transcribeAudio } from "@/lib/openai";
 import { AUDIO_BUCKET, MAX_AUDIO_SIZE_BYTES } from "@/lib/constants";
 import { rateLimit, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
 import { retryQueue } from "@/lib/retry-queue";
+import { trackUsage } from "@/lib/usage";
 
 export const maxDuration = 300; // 5 minutes (Vercel Hobby plan max)
 
@@ -117,6 +118,12 @@ export async function POST(request: NextRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ meeting_id }),
     });
+
+    // Track usage
+    const { data: meetingOwner } = await supabase.from("meetings").select("user_id").eq("id", meeting_id).single();
+    if (meetingOwner?.user_id) {
+      await trackUsage(meetingOwner.user_id, "whisper-transcription", { chunks: chunks.length });
+    }
 
     return NextResponse.json({
       success: true,
