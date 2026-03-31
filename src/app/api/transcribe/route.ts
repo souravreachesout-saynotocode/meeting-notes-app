@@ -5,7 +5,7 @@ import { AUDIO_BUCKET, MAX_AUDIO_SIZE_BYTES } from "@/lib/constants";
 import { rateLimit, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
 import { retryQueue } from "@/lib/retry-queue";
 
-export const maxDuration = 600; // 10 minutes timeout for long meetings
+export const maxDuration = 300; // 5 minutes (Vercel Hobby plan max)
 
 async function splitAudioBlob(blob: Blob, maxSize: number): Promise<Blob[]> {
   const totalSize = blob.size;
