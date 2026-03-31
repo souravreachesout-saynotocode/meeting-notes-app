@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import {
   Mic,
   FileText,
+  BookOpen,
   Lock,
   Plus,
   Loader2,
@@ -87,6 +88,9 @@ export default function DashboardPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTodos, setShowTodos] = useState(false);
+  const [showDigest, setShowDigest] = useState(false);
+  const [digest, setDigest] = useState<string | null>(null);
+  const [digestLoading, setDigestLoading] = useState(false);
   const [recentTodos, setRecentTodos] = useState<ActionItem[]>([]);
   const [todosLoading, setTodosLoading] = useState(false);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -164,6 +168,28 @@ export default function DashboardPage() {
     setRecentTodos(todos);
     setTodosLoading(false);
     setShowTodos(true);
+  };
+
+  const fetchDigest = async () => {
+    setDigestLoading(true);
+    try {
+      // Try GET first (existing digest)
+      let res = await fetch("/api/digest");
+      let data = await res.json();
+
+      if (data.digest) {
+        setDigest(data.digest);
+      } else {
+        // Generate new one
+        res = await fetch("/api/digest", { method: "POST" });
+        data = await res.json();
+        setDigest(data.digest || data.error || "Could not generate digest.");
+      }
+    } catch {
+      setDigest("Failed to generate weekly digest.");
+    }
+    setDigestLoading(false);
+    setShowDigest(true);
   };
 
   const handleDragStart = (meetingId: string) => {
@@ -453,6 +479,34 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* Weekly Digest Panel */}
+      {showDigest && (
+        <div className="px-4 md:px-10 pb-4 max-w-4xl w-full">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-white/40 flex items-center gap-2">
+              <BookOpen className="h-3.5 w-3.5" />
+              Weekly Digest
+            </h2>
+            <button onClick={() => setShowDigest(false)} className="text-white/30 hover:text-white/60">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {digestLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full bg-white/5" />
+              <Skeleton className="h-4 w-3/4 bg-white/5" />
+              <Skeleton className="h-4 w-5/6 bg-white/5" />
+            </div>
+          ) : (
+            <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
+              <div className="text-sm text-white/70 whitespace-pre-wrap leading-relaxed">
+                {digest}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Drag-to-folder overlay */}
       {showFolderDrop && folders.length > 0 && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-[#252525] border border-white/10 rounded-xl p-3 shadow-2xl flex gap-2">
@@ -477,19 +531,34 @@ export default function DashboardPage() {
             <p className="text-xs text-white/20 hidden md:block">
               Drag & drop note to organize
             </p>
-            <Button
-              size="sm"
-              onClick={() => (showTodos ? setShowTodos(false) : fetchRecentTodos())}
-              className={cn(
-                "text-sm font-medium rounded-full px-5",
-                showTodos
-                  ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30"
-                  : "bg-white/10 text-white/60 hover:bg-white/15 border border-white/10"
-              )}
-            >
-              <ListTodo className="mr-2 h-3.5 w-3.5" />
-              {showTodos ? "Hide todos" : "List recent todos"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={() => (showTodos ? setShowTodos(false) : fetchRecentTodos())}
+                className={cn(
+                  "text-sm font-medium rounded-full px-4",
+                  showTodos
+                    ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30"
+                    : "bg-white/10 text-white/60 hover:bg-white/15 border border-white/10"
+                )}
+              >
+                <ListTodo className="mr-1.5 h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{showTodos ? "Hide todos" : "Recent todos"}</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => (showDigest ? setShowDigest(false) : fetchDigest())}
+                className={cn(
+                  "text-sm font-medium rounded-full px-4",
+                  showDigest
+                    ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/30"
+                    : "bg-white/10 text-white/60 hover:bg-white/15 border border-white/10"
+                )}
+              >
+                <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{showDigest ? "Hide digest" : "Weekly digest"}</span>
+              </Button>
+            </div>
           </div>
         </div>
       )}

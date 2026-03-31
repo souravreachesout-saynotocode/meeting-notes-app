@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { summarizeMeeting, MODEL } from "@/lib/claude";
+import { summarizeMeeting, MODEL, getTagColor } from "@/lib/claude";
 import { rateLimit, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
 import { retryQueue } from "@/lib/retry-queue";
 
@@ -75,6 +75,56 @@ export async function POST(request: NextRequest) {
       .from("meetings")
       .update(updateData)
       .eq("id", meeting_id);
+
+    // Save AI-generated tags
+    if (result.tags && result.tags.length > 0) {
+      for (const tagName of result.tags) {
+        // Upsert tag
+        const { data: tag } = await supabase
+          .from("tags")
+          .upsert({ name: tagName.toLowerCase(), color: getTagColor(tagName) }, { onConflict: "name" })
+          .select("id")
+          .single();
+
+        if (tag) {
+          await supabase
+            .from("meeting_tags")
+            .upsert({ meeting_id, tag_id: tag.id }, { onConflict: "meeting_id,tag_id" });
+        }
+      }
+    }
+
+    // Generate embedding for semantic search
+    try {
+      const embeddingText = `${result.title}\n${result.summary}\n${result.tags?.join(", ") || ""}`;
+      const embeddingRes = await fetch("https://api.openai.com/v1/embeddings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "text-embedding-3-small",
+          input: embeddingText,
+        }),
+      });
+
+      if (embeddingRes.ok) {
+        const embData = await embeddingRes.json();
+        const embedding = embData.data[0].embedding;
+
+        await supabase.from("embeddings").upsert(
+          {
+            meeting_id,
+            content: embeddingText,
+            embedding: JSON.stringify(embedding),
+          },
+          { onConflict: "meeting_id" }
+        );
+      }
+    } catch {
+      // Embedding generation is non-critical, don't fail the whole flow
+    }
 
     return NextResponse.json({ success: true, ...result });
   } catch (err) {

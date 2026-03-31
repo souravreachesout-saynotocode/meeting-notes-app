@@ -40,6 +40,7 @@ export default function MeetingDetailPage({
   const [loading, setLoading] = useState(true);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
+  const [tags, setTags] = useState<{ name: string; color: string }[]>([]);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -72,6 +73,20 @@ export default function MeetingDetailPage({
         }
       }
       setLoading(false);
+
+      // Fetch tags
+      const { data: tagData } = await supabase
+        .from("meeting_tags")
+        .select("tags(name, color)")
+        .eq("meeting_id", id);
+
+      if (tagData) {
+        setTags(
+          (tagData as unknown as { tags: { name: string; color: string } }[])
+            .filter((t) => t.tags)
+            .map((t) => t.tags)
+        );
+      }
     }
 
     doFetch();
@@ -218,6 +233,23 @@ export default function MeetingDetailPage({
             {meeting.duration_seconds &&
               ` · ${Math.floor(meeting.duration_seconds / 60)}m ${meeting.duration_seconds % 60}s`}
           </p>
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {tags.map((tag) => (
+                <span
+                  key={tag.name}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium"
+                  style={{
+                    backgroundColor: `${tag.color}20`,
+                    color: tag.color,
+                    border: `1px solid ${tag.color}30`,
+                  }}
+                >
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex gap-2 shrink-0">
           {meeting.status === "completed" && (
