@@ -19,6 +19,8 @@ import {
   X,
   CheckCircle2,
   Circle,
+  Calendar,
+  Video,
 } from "lucide-react";
 
 const statusIndicator: Record<string, string> = {
@@ -65,6 +67,14 @@ function groupMeetingsByDate(meetings: Meeting[]) {
   return groups;
 }
 
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  meetLink: string | null;
+}
+
 interface ActionItem {
   text: string;
   assignee?: string;
@@ -82,6 +92,8 @@ export default function DashboardPage() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [dragMeetingId, setDragMeetingId] = useState<string | null>(null);
   const [showFolderDrop, setShowFolderDrop] = useState(false);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [calendarError, setCalendarError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -93,6 +105,22 @@ export default function DashboardPage() {
       setMeetings(meetingsRes.data || []);
       setFolders(foldersRes.data || []);
       setLoading(false);
+
+      // Fetch calendar events
+      try {
+        const calRes = await fetch("/api/calendar/events");
+        if (calRes.ok) {
+          const events = await calRes.json();
+          setCalendarEvents(events);
+        } else {
+          const err = await calRes.json();
+          if (calRes.status !== 401) {
+            setCalendarError(err.error);
+          }
+        }
+      } catch {
+        // Calendar is optional, don't block dashboard
+      }
     }
     fetchData();
   }, []);
@@ -208,6 +236,70 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
+            {/* Coming up - Calendar events */}
+            {calendarEvents.length > 0 && (
+              <div className="mb-8 md:mb-10">
+                <h2 className="text-lg font-semibold text-white/90 mb-4">Coming up</h2>
+                <div className="rounded-xl border border-white/10 overflow-hidden">
+                  {(() => {
+                    const eventsByDate = new Map<string, CalendarEvent[]>();
+                    for (const ev of calendarEvents) {
+                      const dateKey = format(parseISO(ev.start), "yyyy-MM-dd");
+                      if (!eventsByDate.has(dateKey)) eventsByDate.set(dateKey, []);
+                      eventsByDate.get(dateKey)!.push(ev);
+                    }
+
+                    return Array.from(eventsByDate.entries()).map(([dateKey, events], gi) => {
+                      const date = parseISO(dateKey);
+                      return (
+                        <div key={dateKey}>
+                          <div className={cn("flex", gi > 0 && "border-t border-dashed border-white/10")}>
+                            <div className="w-16 md:w-24 shrink-0 py-3 md:py-4 px-2 md:px-4 flex flex-col items-center justify-start">
+                              <span className="text-xl md:text-2xl font-light text-white/90">{format(date, "d")}</span>
+                              <span className="text-[10px] md:text-[11px] text-white/40 uppercase font-medium">{format(date, "MMM")}</span>
+                              <span className="text-[10px] md:text-[11px] text-white/30">{format(date, "EEE")}</span>
+                              {isToday(date) && <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1" />}
+                            </div>
+                            <div className="flex-1 py-1 md:py-2 border-l border-white/10">
+                              {events.map((event) => (
+                                <div key={event.id} className="flex items-center gap-3 px-3 md:px-4 py-2.5 hover:bg-white/5 transition-colors">
+                                  <div className="w-0.5 h-8 rounded-full bg-blue-500 shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-white/90 truncate">{event.title}</p>
+                                    <p className="text-xs text-white/40">
+                                      {format(parseISO(event.start), "HH:mm")} – {format(parseISO(event.end), "HH:mm")}
+                                    </p>
+                                  </div>
+                                  {event.meetLink && (
+                                    <a
+                                      href={event.meetLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 shrink-0"
+                                    >
+                                      <Video className="h-3.5 w-3.5" />
+                                      <span className="hidden md:inline">Join</span>
+                                    </a>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {calendarError && (
+              <div className="mb-6 flex items-center gap-2 text-xs text-white/30 px-1">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>{calendarError}</span>
+              </div>
+            )}
+
             {/* Day-wise calendar view */}
             {upcomingGroups.length > 0 && (
               <div className="mb-8 md:mb-10">
