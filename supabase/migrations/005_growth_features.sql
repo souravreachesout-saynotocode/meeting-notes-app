@@ -72,18 +72,14 @@ CREATE POLICY "Service role full access on workspaces" ON workspaces FOR ALL
 -- Workspace members
 ALTER TABLE workspace_members ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Members can view workspace members" ON workspace_members FOR SELECT
-  USING (workspace_id IN (SELECT workspace_id FROM workspace_members wm WHERE wm.user_id = auth.uid()));
+  USING (user_id = auth.uid());
 CREATE POLICY "Service role full access on workspace_members" ON workspace_members FOR ALL
   USING (auth.role() = 'service_role');
 
 -- Meeting shares
 ALTER TABLE meeting_shares ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view shares for their meetings" ON meeting_shares FOR SELECT
-  USING (
-    shared_by = auth.uid()
-    OR shared_with = auth.uid()
-    OR email = (SELECT email FROM auth.users WHERE id = auth.uid())
-  );
+  USING (shared_by = auth.uid() OR shared_with = auth.uid());
 CREATE POLICY "Users can share their own meetings" ON meeting_shares FOR INSERT
   WITH CHECK (meeting_id IN (SELECT id FROM meetings WHERE user_id = auth.uid()));
 CREATE POLICY "Users can delete their own shares" ON meeting_shares FOR DELETE
@@ -93,21 +89,13 @@ CREATE POLICY "Service role full access on meeting_shares" ON meeting_shares FOR
 
 -- Update meetings policy to include shared meetings
 CREATE POLICY "Users can view shared meetings" ON meetings FOR SELECT
-  USING (
-    id IN (
-      SELECT meeting_id FROM meeting_shares
-      WHERE shared_with = auth.uid()
-        OR email = (SELECT email FROM auth.users WHERE id = auth.uid())
-    )
-  );
+  USING (id IN (SELECT meeting_id FROM meeting_shares WHERE shared_with = auth.uid()));
 
 -- Update meetings policy to include workspace meetings
 CREATE POLICY "Users can view workspace meetings" ON meetings FOR SELECT
-  USING (
-    workspace_id IN (
-      SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
-    )
-  );
+  USING (workspace_id IS NOT NULL AND workspace_id IN (
+    SELECT workspace_id FROM workspace_members WHERE user_id = auth.uid()
+  ));
 
 -- Public links
 ALTER TABLE public_links ENABLE ROW LEVEL SECURITY;
