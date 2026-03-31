@@ -62,14 +62,14 @@ export async function POST(request: NextRequest) {
   const readable = new ReadableStream({
     async start(controller) {
       try {
-        const response = await stream.finalMessage();
+        const encoder = new TextEncoder();
 
-        for (const block of response.content) {
-          if (block.type === "text") {
-            fullResponse += block.text;
-            controller.enqueue(new TextEncoder().encode(block.text));
-          }
-        }
+        stream.on("text", (text) => {
+          fullResponse += text;
+          controller.enqueue(encoder.encode(text));
+        });
+
+        await stream.finalMessage();
 
         // Save assistant message
         await supabase.from("chat_messages").insert({

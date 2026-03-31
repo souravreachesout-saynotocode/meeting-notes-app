@@ -7,7 +7,13 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = createServerClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (error) {
+      return NextResponse.redirect(
+        new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url)
+      );
+    }
   }
 
   return NextResponse.redirect(new URL("/dashboard", request.url));

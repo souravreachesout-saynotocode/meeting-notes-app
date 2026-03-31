@@ -60,7 +60,6 @@ export function Sidebar() {
   const navItems = [
     { href: "/dashboard", label: "Home", icon: Home },
     { href: "/search", label: "Search", icon: Search, shortcut: "⌘K" },
-    { href: "/chat", label: "Chat", icon: MessageSquare },
   ];
 
   return (
