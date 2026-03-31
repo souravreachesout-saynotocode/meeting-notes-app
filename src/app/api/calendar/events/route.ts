@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase/server";
+import { createAuthClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
-  const supabase = createServerClient();
+  const supabase = await createAuthClient();
 
   // Get the user's session to access their Google OAuth token
   const { data: { session } } = await supabase.auth.getSession();
