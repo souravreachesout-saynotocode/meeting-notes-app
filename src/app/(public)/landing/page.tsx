@@ -11,6 +11,10 @@ import {
   ArrowRight,
   Sparkles,
   Globe,
+  Headphones,
+  Languages,
+  Share2,
+  Zap,
 } from "lucide-react";
 
 const features = [
@@ -18,41 +22,79 @@ const features = [
     icon: Mic,
     title: "Record Meetings",
     desc: "Capture audio from your microphone or browser tab system audio",
+    gradient: "from-red-500/20 to-orange-500/20",
+    iconColor: "text-red-400",
   },
   {
     icon: Globe,
     title: "97 Languages",
-    desc: "Auto-detects and transcribes 97 languages including Hindi, English, Tamil, Telugu, Spanish, French, and more",
+    desc: "Auto-detects and transcribes 97 languages — from Hindi to Danish to Japanese",
+    gradient: "from-blue-500/20 to-cyan-500/20",
+    iconColor: "text-blue-400",
   },
   {
     icon: Brain,
     title: "AI Summaries",
-    desc: "Get instant summaries, action items, and key decisions from Claude",
+    desc: "Get instant summaries, action items, and key decisions powered by Claude",
+    gradient: "from-purple-500/20 to-pink-500/20",
+    iconColor: "text-purple-400",
   },
   {
     icon: MessageSquare,
     title: "Chat with Notes",
     desc: "Ask questions about any meeting — AI answers from the transcript",
+    gradient: "from-emerald-500/20 to-teal-500/20",
+    iconColor: "text-emerald-400",
   },
   {
     icon: Search,
-    title: "Search Everything",
-    desc: "Full-text search across all your transcripts and summaries",
+    title: "Smart Search",
+    desc: "Semantic AI search + text search across all meetings",
+    gradient: "from-yellow-500/20 to-amber-500/20",
+    iconColor: "text-yellow-400",
   },
   {
-    icon: FolderOpen,
-    title: "Organize in Folders",
-    desc: "Group meetings into spaces and folders for easy access",
+    icon: Share2,
+    title: "Share & Collaborate",
+    desc: "Share meetings via link, invite team members, organize in workspaces",
+    gradient: "from-indigo-500/20 to-violet-500/20",
+    iconColor: "text-indigo-400",
   },
+];
+
+const scripts = [
+  { text: "Meeting notes", lang: "English" },
+  { text: "बैठक नोट्स", lang: "Hindi" },
+  { text: "Mødenotater", lang: "Danish" },
+  { text: "会议记录", lang: "Chinese" },
+  { text: "議事録", lang: "Japanese" },
+  { text: "اجتماع کی تفصیلات", lang: "Urdu" },
+  { text: "சந்திப்பு குறிப்புகள்", lang: "Tamil" },
+  { text: "미팅 노트", lang: "Korean" },
+  { text: "Notas de reunión", lang: "Spanish" },
+  { text: "Notes de réunion", lang: "French" },
+  { text: "సమావేశ గమనికలు", lang: "Telugu" },
+  { text: "Протокол встречи", lang: "Russian" },
+];
+
+const languages = [
+  "English", "Hindi", "Danish", "Tamil", "Telugu", "Bengali", "Marathi",
+  "Gujarati", "Kannada", "Malayalam", "Punjabi", "Urdu",
+  "Spanish", "French", "German", "Portuguese", "Chinese",
+  "Japanese", "Korean", "Arabic", "Russian", "Italian",
+  "Dutch", "Turkish", "Vietnamese", "Thai", "Indonesian",
+  "Swedish", "Polish", "Ukrainian", "Czech", "Norwegian",
 ];
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#111] text-white">
+    <div className="min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 md:px-12 py-5 max-w-6xl mx-auto">
+      <nav className="flex items-center justify-between px-6 md:px-12 py-5 max-w-6xl mx-auto relative z-10">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-emerald-400" />
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+            <Mic className="h-4 w-4 text-white" />
+          </div>
           <span className="font-bold text-lg">MeetScribe</span>
         </div>
         <div className="flex items-center gap-3">
@@ -62,56 +104,138 @@ export default function LandingPage() {
             </Button>
           </Link>
           <Link href="/signup">
-            <Button className="bg-white text-black hover:bg-white/90 text-sm">
-              Get Started
+            <Button className="bg-emerald-500 hover:bg-emerald-400 text-white text-sm">
+              Get Started Free
             </Button>
           </Link>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="px-6 md:px-12 pt-20 pb-24 max-w-4xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-medium mb-8 border border-emerald-500/20">
-          <Sparkles className="h-3 w-3" />
-          Powered by AI
+      <section className="relative px-6 md:px-12 pt-16 md:pt-24 pb-20 md:pb-32 max-w-5xl mx-auto text-center">
+        {/* Background glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-20 right-0 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-medium mb-8 border border-emerald-500/20">
+            <Sparkles className="h-3 w-3" />
+            AI-powered meeting notes
+          </div>
+
+          <h1 className="text-4xl md:text-7xl font-bold tracking-tight leading-[1.1] mb-6">
+            Never miss a word
+            <br />
+            <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
+              in any language
+            </span>
+          </h1>
+
+          <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
+            Record meetings, get AI transcriptions in 97 languages, instant summaries with action items, and chat with your notes.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+            <Link href="/signup">
+              <Button size="lg" className="bg-emerald-500 hover:bg-emerald-400 text-white h-13 px-8 text-base font-medium shadow-lg shadow-emerald-500/25">
+                Start for free
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 h-13 px-8 text-base">
+                Log in
+              </Button>
+            </Link>
+          </div>
+
+          {/* Hero graphic — microphone with sound waves */}
+          <div className="relative max-w-lg mx-auto">
+            <div className="relative bg-[#151515] rounded-2xl border border-white/10 p-8 shadow-2xl">
+              {/* Microphone icon with animated rings */}
+              <div className="flex items-center justify-center mb-6">
+                <div className="relative">
+                  <div className="absolute inset-0 w-20 h-20 rounded-full bg-emerald-500/20 animate-ping" style={{ animationDuration: "2s" }} />
+                  <div className="absolute inset-2 w-16 h-16 rounded-full bg-emerald-500/10 animate-ping" style={{ animationDuration: "2.5s" }} />
+                  <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                    <Mic className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Fake waveform */}
+              <div className="flex items-center justify-center gap-[3px] h-12 mb-6">
+                {Array.from({ length: 40 }).map((_, i) => {
+                  const height = Math.sin(i * 0.4) * 30 + ((i * 7 + 13) % 15) + 8;
+                  return (
+                    <div
+                      key={i}
+                      className="w-[3px] rounded-full bg-gradient-to-t from-emerald-500/60 to-emerald-400/80"
+                      style={{ height: `${height}px` }}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Script samples flowing */}
+              <div className="space-y-2">
+                {scripts.slice(0, 4).map((s, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.03]"
+                  >
+                    <div className="w-1 h-6 rounded-full bg-emerald-500/60" />
+                    <span className="text-sm text-white/70">{s.text}</span>
+                    <span className="text-[10px] text-white/20 ml-auto">{s.lang}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Floating badges */}
+            <div className="absolute -top-3 -right-3 px-3 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-400 text-xs font-medium flex items-center gap-1.5">
+              <Brain className="h-3 w-3" />
+              AI Summary
+            </div>
+            <div className="absolute -bottom-3 -left-3 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-medium flex items-center gap-1.5">
+              <Languages className="h-3 w-3" />
+              97 Languages
+            </div>
+          </div>
         </div>
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight mb-6">
-          Your meetings,
-          <br />
-          <span className="text-white/40">automatically captured.</span>
-        </h1>
-        <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Record, transcribe, and summarize your meetings with AI.
-          Get action items, search across meetings, and chat with your notes —
-          all in one place.
-        </p>
-        <div className="flex items-center justify-center gap-4">
-          <Link href="/signup">
-            <Button size="lg" className="bg-white text-black hover:bg-white/90 h-12 px-8 text-sm font-medium">
-              Start for free
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-          <Link href="/login">
-            <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 h-12 px-8 text-sm">
-              Log in
-            </Button>
-          </Link>
+      </section>
+
+      {/* Scrolling scripts bar */}
+      <section className="py-8 border-y border-white/5 overflow-hidden">
+        <div className="flex animate-scroll gap-8 whitespace-nowrap">
+          {[...scripts, ...scripts].map((s, i) => (
+            <span key={i} className="text-lg text-white/15 font-medium">
+              {s.text}
+            </span>
+          ))}
         </div>
       </section>
 
       {/* Features */}
-      <section className="px-6 md:px-12 py-20 max-w-5xl mx-auto">
-        <h2 className="text-sm font-medium text-white/30 uppercase tracking-wider text-center mb-12">
-          Everything you need
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="px-6 md:px-12 py-20 md:py-28 max-w-5xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Everything you need,{" "}
+            <span className="text-white/40">nothing you don&apos;t</span>
+          </h2>
+          <p className="text-white/40 max-w-lg mx-auto">
+            From recording to action items — MeetScribe handles it all so you can focus on the conversation.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((f) => (
             <div
               key={f.title}
-              className="p-6 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-colors"
+              className="group p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-all hover:-translate-y-1 duration-300"
             >
-              <f.icon className="h-5 w-5 text-white/40 mb-4" />
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${f.gradient} flex items-center justify-center mb-4`}>
+                <f.icon className={`h-5 w-5 ${f.iconColor}`} />
+              </div>
               <h3 className="font-semibold text-white/90 mb-2">{f.title}</h3>
               <p className="text-sm text-white/40 leading-relaxed">{f.desc}</p>
             </div>
@@ -119,81 +243,144 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Languages */}
-      <section className="px-6 md:px-12 py-16 max-w-5xl mx-auto">
-        <h2 className="text-sm font-medium text-white/30 uppercase tracking-wider text-center mb-6">
-          Transcribes 97 languages
-        </h2>
-        <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
-          {[
-            "English", "Hindi", "Tamil", "Telugu", "Bengali", "Marathi",
-            "Gujarati", "Kannada", "Malayalam", "Punjabi", "Urdu",
-            "Spanish", "French", "German", "Portuguese", "Chinese",
-            "Japanese", "Korean", "Arabic", "Russian", "Italian",
-            "Dutch", "Turkish", "Vietnamese", "Thai", "Indonesian",
-            "Swedish", "Polish", "Ukrainian", "Czech",
-          ].map((lang) => (
-            <span
-              key={lang}
-              className="px-2.5 py-1 rounded-full text-xs text-white/50 bg-white/[0.04] border border-white/[0.06]"
-            >
-              {lang}
+      {/* Languages section with globe graphic */}
+      <section className="px-6 md:px-12 py-20 max-w-5xl mx-auto">
+        <div className="relative rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.03] to-transparent p-10 md:p-16 overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+          <div className="relative z-10 text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-medium mb-4 border border-blue-500/20">
+              <Globe className="h-3 w-3" />
+              Multilingual
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3">
+              Speaks your language
+            </h2>
+            <p className="text-white/40 max-w-md mx-auto text-sm">
+              Auto-detects and transcribes meetings in 97 languages. No configuration needed.
+            </p>
+          </div>
+
+          {/* Script samples in a grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-10">
+            {scripts.map((s, i) => (
+              <div
+                key={i}
+                className="px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] transition-colors"
+              >
+                <p className="text-sm text-white/70 mb-1 truncate">{s.text}</p>
+                <p className="text-[10px] text-white/25">{s.lang}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Language pills */}
+          <div className="flex flex-wrap justify-center gap-2">
+            {languages.map((lang) => (
+              <span
+                key={lang}
+                className="px-3 py-1 rounded-full text-xs text-white/40 bg-white/[0.04] border border-white/[0.06] hover:text-white/60 hover:border-white/[0.12] transition-colors"
+              >
+                {lang}
+              </span>
+            ))}
+            <span className="px-3 py-1 rounded-full text-xs text-emerald-400/60 bg-emerald-500/5 border border-emerald-500/10">
+              +66 more
             </span>
-          ))}
-          <span className="px-2.5 py-1 rounded-full text-xs text-white/30 bg-white/[0.02] border border-white/[0.04]">
-            +67 more
-          </span>
+          </div>
         </div>
       </section>
 
       {/* How it works */}
       <section className="px-6 md:px-12 py-20 max-w-4xl mx-auto">
-        <h2 className="text-sm font-medium text-white/30 uppercase tracking-wider text-center mb-12">
-          How it works
-        </h2>
-        <div className="flex flex-col md:flex-row gap-8">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Three steps.{" "}
+            <span className="text-white/40">Zero effort.</span>
+          </h2>
+        </div>
+        <div className="flex flex-col md:flex-row gap-6">
           {[
-            { step: "1", title: "Record", desc: "Hit record during any meeting — in person or online" },
-            { step: "2", title: "AI processes", desc: "Whisper transcribes, Claude summarizes with action items" },
-            { step: "3", title: "Review & act", desc: "Read notes, chat with them, search, and export" },
+            {
+              step: "1",
+              title: "Record",
+              desc: "Hit record during any meeting — in person or online. Works with mic or browser audio.",
+              icon: Headphones,
+              color: "from-red-500 to-orange-500",
+            },
+            {
+              step: "2",
+              title: "AI processes",
+              desc: "OpenAI Whisper transcribes in any language. Claude generates summaries, action items, and tags.",
+              icon: Zap,
+              color: "from-purple-500 to-pink-500",
+            },
+            {
+              step: "3",
+              title: "Review & act",
+              desc: "Read notes, chat with them, search across meetings, share with your team, and export.",
+              icon: FolderOpen,
+              color: "from-emerald-500 to-cyan-500",
+            },
           ].map((s) => (
-            <div key={s.step} className="flex-1 text-center">
-              <div className="w-10 h-10 rounded-full bg-white/10 text-white/60 flex items-center justify-center text-sm font-bold mx-auto mb-4">
-                {s.step}
+            <div key={s.step} className="flex-1 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-center">
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+                <s.icon className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-semibold text-white/90 mb-2">{s.title}</h3>
-              <p className="text-sm text-white/40">{s.desc}</p>
+              <div className="text-[10px] text-white/20 uppercase tracking-widest mb-2">Step {s.step}</div>
+              <h3 className="font-bold text-white/90 mb-2 text-lg">{s.title}</h3>
+              <p className="text-sm text-white/40 leading-relaxed">{s.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* CTA */}
-      <section className="px-6 md:px-12 py-20 max-w-4xl mx-auto text-center">
-        <h2 className="text-2xl md:text-3xl font-bold mb-4">
-          Stop losing meeting insights
-        </h2>
-        <p className="text-white/40 mb-8">
-          Start capturing every detail — automatically.
-        </p>
-        <Link href="/signup">
-          <Button size="lg" className="bg-white text-black hover:bg-white/90 h-12 px-8">
-            Get started free
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </Link>
+      <section className="px-6 md:px-12 py-24 max-w-4xl mx-auto text-center relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-purple-500/5 rounded-3xl pointer-events-none" />
+        <div className="relative z-10">
+          <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
+            Stop losing
+            <br />
+            meeting insights
+          </h2>
+          <p className="text-white/40 mb-8 text-lg">
+            Join teams who never miss an action item.
+          </p>
+          <Link href="/signup">
+            <Button size="lg" className="bg-emerald-500 hover:bg-emerald-400 text-white h-13 px-10 text-base font-medium shadow-lg shadow-emerald-500/25">
+              Get started free
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+          <p className="text-xs text-white/20 mt-4">No credit card required</p>
+        </div>
       </section>
 
       {/* Footer */}
       <footer className="px-6 md:px-12 py-8 border-t border-white/5 max-w-6xl mx-auto">
-        <div className="flex items-center justify-between text-xs text-white/30">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/30">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-3 w-3" />
+            <div className="h-6 w-6 rounded-md bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+              <Mic className="h-3 w-3 text-white" />
+            </div>
             MeetScribe
           </div>
-          <p>Built with Next.js, Supabase, OpenAI, and Claude</p>
+          <p>Built with Next.js, Supabase, OpenAI Whisper, and Claude</p>
         </div>
       </footer>
+
+      {/* Scrolling animation CSS */}
+      <style jsx>{`
+        @keyframes scroll {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        .animate-scroll {
+          animation: scroll 30s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }
