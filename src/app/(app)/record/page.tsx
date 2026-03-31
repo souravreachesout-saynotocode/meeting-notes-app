@@ -40,12 +40,12 @@ export default function RecordPage() {
   const micRecorder = useAudioRecorder();
   const screenRecorder = useScreenRecorder();
 
-  const recorder = mode === "microphone" ? micRecorder : screenRecorder;
+  const isMic = mode === "microphone";
+  const recorder = isMic ? micRecorder : screenRecorder;
   const {
     isRecording,
     isPaused,
     duration,
-    audioBlob,
     startRecording,
     stopRecording,
     pauseRecording,
@@ -53,6 +53,10 @@ export default function RecordPage() {
     resetRecording,
     error: recorderError,
   } = recorder;
+
+  // Mic returns audioBlobs[], screen returns audioBlob
+  const audioBlobs = isMic ? micRecorder.audioBlobs : (screenRecorder.audioBlob ? [screenRecorder.audioBlob] : []);
+  const hasRecording = audioBlobs.length > 0;
 
   const [showScreenOption, setShowScreenOption] = useState(false);
   useEffect(() => {
@@ -63,7 +67,7 @@ export default function RecordPage() {
   }, []);
 
   const handleSave = async () => {
-    if (!audioBlob) return;
+    if (audioBlobs.length === 0) return;
 
     setIsUploading(true);
     setUploadError(null);
@@ -93,9 +97,9 @@ export default function RecordPage() {
 
     try {
       const supabase = createClient();
-
       const { data: { user } } = await supabase.auth.getUser();
 
+      // Create meeting record
       const { data: meeting, error: meetingError } = await supabase
         .from("meetings")
         .insert({
@@ -110,28 +114,41 @@ export default function RecordPage() {
 
       if (meetingError) throw meetingError;
 
-      const audioPath = `${user?.id}/${meeting.id}.webm`;
-      const { error: storageError } = await supabase.storage
-        .from(AUDIO_BUCKET)
-        .upload(audioPath, audioBlob, {
-          contentType: "audio/webm",
-          upsert: true,
-        });
+      // Upload audio segments
+      const segmentCount = audioBlobs.length;
+      const totalSize = audioBlobs.reduce((sum, b) => sum + b.size, 0);
+      const audioPaths: string[] = [];
 
-      if (storageError) throw storageError;
+      for (let i = 0; i < segmentCount; i++) {
+        const path = segmentCount === 1
+          ? `${user?.id}/${meeting.id}.webm`
+          : `${user?.id}/${meeting.id}_part${i + 1}.webm`;
 
+        const { error: uploadErr } = await supabase.storage
+          .from(AUDIO_BUCKET)
+          .upload(path, audioBlobs[i], { contentType: "audio/webm", upsert: true });
+
+        if (uploadErr) throw uploadErr;
+        audioPaths.push(path);
+      }
+
+      // Store first path as main audio_path, all paths in metadata
       await supabase
         .from("meetings")
         .update({
-          audio_path: audioPath,
-          audio_size_bytes: audioBlob.size,
+          audio_path: audioPaths[0],
+          audio_size_bytes: totalSize,
         })
         .eq("id", meeting.id);
 
+      // Trigger transcription with segment info
       fetch("/api/transcribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ meeting_id: meeting.id }),
+        body: JSON.stringify({
+          meeting_id: meeting.id,
+          audio_paths: audioPaths,
+        }),
       });
 
       router.push(`/meetings/${meeting.id}`);
@@ -212,13 +229,13 @@ export default function RecordPage() {
             </span>
           </div>
         )}
-        {audioBlob && !isRecording && (
+        {hasRecording && !isRecording && (
           <span className="text-sm text-white/50">Recording complete</span>
         )}
 
         {/* Controls */}
         <div className="flex gap-3">
-          {!isRecording && !audioBlob && (
+          {!isRecording && !hasRecording && (
             <Button
               size="lg"
               onClick={startRecording}
@@ -263,7 +280,7 @@ export default function RecordPage() {
             </>
           )}
 
-          {audioBlob && !isRecording && (
+          {hasRecording && !isRecording && (
             <>
               <Button
                 size="lg"
@@ -300,7 +317,7 @@ export default function RecordPage() {
         )}
 
         {/* Hint */}
-        {mode === "screen" && !isRecording && !audioBlob && (
+        {mode === "screen" && !isRecording && !hasRecording && (
           <p className="text-sm text-white/30 text-center max-w-sm">
             Select a browser tab and check &ldquo;Share tab audio&rdquo;.
             Works best in Chrome/Edge on desktop.

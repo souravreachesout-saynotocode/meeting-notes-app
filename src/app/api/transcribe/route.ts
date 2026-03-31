@@ -13,7 +13,8 @@ export async function POST(request: NextRequest) {
   const rl = rateLimit(`transcribe:${ip}`, RATE_LIMITS.transcribe);
   if (!rl.allowed) return rateLimitResponse(rl.resetAt);
 
-  const { meeting_id } = await request.json();
+  const body = await request.json();
+  const { meeting_id, audio_paths } = body;
 
   if (!meeting_id) {
     return NextResponse.json(
@@ -25,51 +26,60 @@ export async function POST(request: NextRequest) {
   const supabase = createServerClient();
 
   try {
-    // Update status to transcribing
     await supabase
       .from("meetings")
       .update({ status: "transcribing" })
       .eq("id", meeting_id);
 
-    // Get audio file from storage
-    const { data: meeting } = await supabase
-      .from("meetings")
-      .select("audio_path, audio_size_bytes")
-      .eq("id", meeting_id)
-      .single();
+    // Determine audio paths to transcribe
+    let paths: string[] = audio_paths || [];
 
-    if (!meeting?.audio_path) {
-      throw new Error("No audio file found for this meeting");
+    if (paths.length === 0) {
+      // Fallback: get path from meeting record
+      const { data: meeting } = await supabase
+        .from("meetings")
+        .select("audio_path")
+        .eq("id", meeting_id)
+        .single();
+
+      if (!meeting?.audio_path) {
+        throw new Error("No audio file found for this meeting");
+      }
+      paths = [meeting.audio_path];
     }
 
-    const { data: audioData, error: downloadError } = await supabase.storage
-      .from(AUDIO_BUCKET)
-      .download(meeting.audio_path);
+    // Transcribe each segment and concatenate
+    const transcriptParts: string[] = [];
+    let detectedLanguage = "unknown";
 
-    if (downloadError || !audioData) {
-      throw new Error(`Failed to download audio: ${downloadError?.message}`);
+    for (let i = 0; i < paths.length; i++) {
+      const { data: audioData, error: downloadError } = await supabase.storage
+        .from(AUDIO_BUCKET)
+        .download(paths[i]);
+
+      if (downloadError || !audioData) {
+        throw new Error(`Failed to download audio segment ${i + 1}: ${downloadError?.message}`);
+      }
+
+      const { text, language } = await transcribeAudio(audioData, paths[i]);
+      transcriptParts.push(text);
+
+      if (i === 0) detectedLanguage = language;
     }
 
-    // Transcribe with Whisper (send whole file — WebM can't be split by bytes)
-    const { text, language } = await transcribeAudio(
-      audioData,
-      meeting.audio_path
-    );
-
-    // Save transcript
-    const wordCount = text.split(/\s+/).filter(Boolean).length;
+    const fullText = transcriptParts.join("\n\n");
+    const wordCount = fullText.split(/\s+/).filter(Boolean).length;
 
     await supabase.from("transcripts").upsert(
       {
         meeting_id,
-        content: text,
-        language,
+        content: fullText,
+        language: detectedLanguage,
         word_count: wordCount,
       },
       { onConflict: "meeting_id" }
     );
 
-    // Update status to summarizing
     await supabase
       .from("meetings")
       .update({ status: "summarizing" })
@@ -86,13 +96,14 @@ export async function POST(request: NextRequest) {
     // Track usage
     const { data: meetingOwner } = await supabase.from("meetings").select("user_id").eq("id", meeting_id).single();
     if (meetingOwner?.user_id) {
-      await trackUsage(meetingOwner.user_id, "whisper-transcription");
+      await trackUsage(meetingOwner.user_id, "whisper-transcription", { segments: paths.length });
     }
 
     return NextResponse.json({
       success: true,
-      text,
-      language,
+      text: fullText,
+      language: detectedLanguage,
+      segments: paths.length,
     });
   } catch (err) {
     const errorMessage =
@@ -103,7 +114,6 @@ export async function POST(request: NextRequest) {
       .update({ status: "error", error_message: errorMessage })
       .eq("id", meeting_id);
 
-    // Add to retry queue
     retryQueue.setBaseUrl(request.nextUrl.origin);
     const willRetry = retryQueue.add(meeting_id, "transcribe");
 
