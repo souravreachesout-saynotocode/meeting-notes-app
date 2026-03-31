@@ -7,7 +7,6 @@ import {
   Brain,
   MessageSquare,
   Search,
-  Download,
   FolderOpen,
   ArrowRight,
   Sparkles,

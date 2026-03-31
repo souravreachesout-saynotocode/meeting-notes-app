@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
@@ -16,7 +16,6 @@ import {
   AlertCircle,
   ListTodo,
   GripVertical,
-  FolderOpen,
   X,
   CheckCircle2,
   Circle,

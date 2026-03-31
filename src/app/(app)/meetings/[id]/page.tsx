@@ -42,33 +42,43 @@ export default function MeetingDetailPage({
   const [titleDraft, setTitleDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchMeeting = async () => {
-    const supabase = createClient();
-    const [meetingRes, transcriptRes, summaryRes] = await Promise.all([
-      supabase.from("meetings").select("*").eq("id", id).single(),
-      supabase.from("transcripts").select("*").eq("meeting_id", id).single(),
-      supabase.from("summaries").select("*").eq("meeting_id", id).single(),
-    ]);
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
 
-    if (meetingRes.data) {
-      setMeeting({
-        ...meetingRes.data,
-        transcript: transcriptRes.data || undefined,
-        summary: summaryRes.data || undefined,
-      });
+    async function doFetch() {
+      const supabase = createClient();
+      const [meetingRes, transcriptRes, summaryRes] = await Promise.all([
+        supabase.from("meetings").select("*").eq("id", id).single(),
+        supabase.from("transcripts").select("*").eq("meeting_id", id).single(),
+        supabase.from("summaries").select("*").eq("meeting_id", id).single(),
+      ]);
+
+      if (meetingRes.data) {
+        const m = {
+          ...meetingRes.data,
+          transcript: transcriptRes.data || undefined,
+          summary: summaryRes.data || undefined,
+        };
+        setMeeting(m);
+
+        // Start polling if still processing
+        if (m.status !== "completed" && m.status !== "error" && !interval) {
+          interval = setInterval(doFetch, POLLING_INTERVAL_MS);
+        }
+        // Stop polling once done
+        if ((m.status === "completed" || m.status === "error") && interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+      }
+      setLoading(false);
     }
-    setLoading(false);
-  };
 
-  useEffect(() => {
-    fetchMeeting();
+    doFetch();
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [id]);
-
-  useEffect(() => {
-    if (!meeting || meeting.status === "completed" || meeting.status === "error") return;
-    const interval = setInterval(fetchMeeting, POLLING_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [meeting?.status]);
 
   useEffect(() => {
     if (editingTitle && titleInputRef.current) {
@@ -117,7 +127,10 @@ export default function MeetingDetailPage({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ meeting_id: id }),
     });
-    fetchMeeting();
+    // Force refresh by toggling loading
+    setLoading(true);
+    setMeeting(null);
+    window.location.reload();
   };
 
   if (loading) {

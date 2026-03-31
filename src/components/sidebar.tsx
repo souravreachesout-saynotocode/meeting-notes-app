@@ -11,7 +11,6 @@ import type { Folder } from "@/types";
 import {
   Home,
   Search,
-  MessageSquare,
   Mic,
   FolderPlus,
   Lock,

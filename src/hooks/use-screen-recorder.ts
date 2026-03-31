@@ -22,19 +22,16 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
   const [duration, setDuration] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isSupported, setIsSupported] = useState(false);
+  const [isSupported] = useState(
+    () =>
+      typeof navigator !== "undefined" &&
+      !!navigator.mediaDevices?.getDisplayMedia
+  );
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    setIsSupported(
-      typeof navigator !== "undefined" &&
-        !!navigator.mediaDevices?.getDisplayMedia
-    );
-  }, []);
 
   const startTimer = useCallback(() => {
     timerRef.current = setInterval(() => {

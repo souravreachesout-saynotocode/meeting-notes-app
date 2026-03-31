@@ -21,8 +21,11 @@ export default function SearchPage() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!query.trim()) {
-      setResults([]);
-      setSearched(false);
+      // Use a 0ms timeout to avoid synchronous setState in effect
+      debounceRef.current = setTimeout(() => {
+        setResults([]);
+        setSearched(false);
+      }, 0);
       return;
     }
 
