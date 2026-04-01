@@ -32,7 +32,13 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
   };
 
   const handleInvite = async () => {
-    if (emails.length === 0) return;
+    // Include current input if it looks like an email
+    const allEmails = [...emails];
+    const trimmed = email.trim();
+    if (trimmed && trimmed.includes("@") && !allEmails.includes(trimmed)) {
+      allEmails.push(trimmed);
+    }
+    if (allEmails.length === 0) return;
     setLoading(true);
 
     const supabase = createClient();
@@ -64,7 +70,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
     }
 
     if (workspaceId) {
-      for (const inviteEmail of emails) {
+      for (const inviteEmail of allEmails) {
         await fetch(`/api/workspaces/${workspaceId}/members`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -161,7 +167,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
               {/* Invite button */}
               <Button
                 onClick={handleInvite}
-                disabled={loading || emails.length === 0}
+                disabled={loading || (emails.length === 0 && !email.trim().includes("@"))}
                 className="w-full bg-white text-black hover:bg-white/90 h-11 font-medium mb-4"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Invite"}
