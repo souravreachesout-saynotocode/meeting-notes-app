@@ -40,6 +40,7 @@ export default function MeetingDetailPage({
   const router = useRouter();
   const [meeting, setMeeting] = useState<MeetingData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadTimestamp] = useState(() => Date.now());
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [tags, setTags] = useState<{ name: string; color: string }[]>([]);
@@ -139,16 +140,26 @@ export default function MeetingDetailPage({
 
   const handleRetry = async () => {
     const supabase = createClient();
-    await supabase.from("meetings").update({ status: "transcribing", error_message: null }).eq("id", id);
-    fetch("/api/transcribe", {
+
+    // Determine what to retry based on current status
+    const retryStatus = meeting?.transcript ? "summarizing" : "transcribing";
+    const endpoint = meeting?.transcript ? "/api/summarize" : "/api/transcribe";
+
+    await supabase
+      .from("meetings")
+      .update({ status: retryStatus, error_message: null })
+      .eq("id", id);
+
+    // Update local state immediately
+    if (meeting) {
+      setMeeting({ ...meeting, status: retryStatus as "transcribing" | "summarizing", error_message: null });
+    }
+
+    fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ meeting_id: id }),
     });
-    // Force refresh by toggling loading
-    setLoading(true);
-    setMeeting(null);
-    window.location.reload();
   };
 
   if (loading) {
@@ -172,6 +183,12 @@ export default function MeetingDetailPage({
   }
 
   const isProcessing = meeting.status === "transcribing" || meeting.status === "summarizing";
+
+  // Check if stuck (processing for more than 10 minutes)
+  const updatedMs = meeting.updated_at ? new Date(meeting.updated_at).getTime() : 0;
+  const isStuck = isProcessing && updatedMs > 0 &&
+    (loadTimestamp - updatedMs) > 10 * 60 * 1000;
+
   const actionItems = (meeting.summary?.action_items || []) as { text: string; assignee?: string; completed?: boolean }[];
   const keyDecisions = (meeting.summary?.key_decisions || []) as { text: string }[];
 
@@ -289,25 +306,43 @@ export default function MeetingDetailPage({
 
       {/* Processing status */}
       {isProcessing && (
-        <div className="mb-6 flex items-center gap-3 py-4 px-5 rounded-xl bg-white/5 border border-white/10">
-          <Loader2 className="h-5 w-5 animate-spin text-white/50" />
-          <div>
-            <p className="text-sm font-medium text-white/80">
-              {meeting.status === "transcribing"
-                ? "Transcribing audio..."
-                : "Generating summary..."}
-            </p>
-            <p className="text-xs text-white/40">
-              This may take a minute. The page will update automatically.
-            </p>
+        <div className="mb-6 flex items-center justify-between py-4 px-5 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-white/50" />
+            <div>
+              <p className="text-sm font-medium text-white/80">
+                {meeting.status === "transcribing"
+                  ? "Transcribing audio..."
+                  : "Generating summary..."}
+              </p>
+              <p className="text-xs text-white/40">
+                {isStuck
+                  ? "This is taking longer than expected. You can retry."
+                  : "This may take a minute. The page will update automatically."}
+              </p>
+            </div>
           </div>
+          {isStuck && (
+            <Button size="sm" onClick={handleRetry} className="bg-white/10 hover:bg-white/15 text-white border-0 shrink-0">
+              <RefreshCw className="mr-2 h-3.5 w-3.5" />
+              Retry
+            </Button>
+          )}
         </div>
       )}
 
       {meeting.status === "error" && (
         <div className="mb-6 py-4 px-5 rounded-xl bg-red-500/10 border border-red-500/20">
-          <p className="text-sm font-medium text-red-400">Processing failed</p>
-          <p className="text-xs text-red-400/70">{meeting.error_message}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-red-400">Processing failed</p>
+              <p className="text-xs text-red-400/70">{meeting.error_message}</p>
+            </div>
+            <Button size="sm" onClick={handleRetry} className="bg-white/10 hover:bg-white/15 text-white border-0 shrink-0">
+              <RefreshCw className="mr-2 h-3.5 w-3.5" />
+              Retry
+            </Button>
+          </div>
         </div>
       )}
 
