@@ -18,7 +18,6 @@ import {
   ListTodo,
   GripVertical,
   X,
-  CheckCircle2,
   Circle,
   Calendar,
   Video,
@@ -128,23 +127,24 @@ interface CalendarEvent {
   meetLink: string | null;
 }
 
-interface ActionItem {
-  text: string;
-  assignee?: string;
-  completed?: boolean;
-  meetingTitle?: string;
-  meetingId?: string;
+interface TodoGroup {
+  date: string;
+  meetings: {
+    title: string;
+    id: string;
+    items: { text: string; assignee?: string; completed?: boolean }[];
+  }[];
 }
 
 export default function DashboardPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTodos, setShowTodos] = useState(false);
+  const [todoGroups, setTodoGroups] = useState<TodoGroup[]>([]);
+  const [todosLoading, setTodosLoading] = useState(false);
   const [showDigest, setShowDigest] = useState(false);
   const [digest, setDigest] = useState<string | null>(null);
   const [digestLoading, setDigestLoading] = useState(false);
-  const [recentTodos, setRecentTodos] = useState<ActionItem[]>([]);
-  const [todosLoading, setTodosLoading] = useState(false);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [dragMeetingId, setDragMeetingId] = useState<string | null>(null);
   const [showFolderDrop, setShowFolderDrop] = useState(false);
@@ -184,41 +184,13 @@ export default function DashboardPage() {
 
   const fetchRecentTodos = async () => {
     setTodosLoading(true);
-    const supabase = createClient();
-
-    // Get summaries from recent completed meetings
-    const { data: summaries } = await supabase
-      .from("summaries")
-      .select("meeting_id, action_items")
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    if (!summaries) {
-      setTodosLoading(false);
-      return;
+    try {
+      const res = await fetch("/api/todos");
+      const data = await res.json();
+      setTodoGroups(data.todos || []);
+    } catch {
+      setTodoGroups([]);
     }
-
-    const meetingIds = summaries.map((s) => s.meeting_id);
-    const { data: meetingData } = await supabase
-      .from("meetings")
-      .select("id, title")
-      .in("id", meetingIds);
-
-    const titleMap = new Map((meetingData || []).map((m) => [m.id, m.title]));
-
-    const todos: ActionItem[] = [];
-    for (const s of summaries) {
-      const items = (s.action_items || []) as ActionItem[];
-      for (const item of items) {
-        todos.push({
-          ...item,
-          meetingTitle: titleMap.get(s.meeting_id) || "Meeting",
-          meetingId: s.meeting_id,
-        });
-      }
-    }
-
-    setRecentTodos(todos);
     setTodosLoading(false);
     setShowTodos(true);
   };
@@ -425,55 +397,51 @@ export default function DashboardPage() {
               />
             ))}
 
-            {/* Recent Todos Panel */}
+            {/* Recent Todos Panel — AI organized by date */}
             {showTodos && (
               <div className="mb-8">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-medium text-white/40">Recent Action Items</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-medium text-white/50">Recent meeting action items</h2>
                   <button onClick={() => setShowTodos(false)} className="text-white/30 hover:text-white/60">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
                 {todosLoading ? (
-                  <div className="space-y-2">
-                    <Skeleton className="h-10 w-full bg-white/5 rounded-lg" />
-                    <Skeleton className="h-10 w-full bg-white/5 rounded-lg" />
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-64 bg-white/5" />
+                    <Skeleton className="h-20 w-full bg-white/5 rounded-lg" />
+                    <Skeleton className="h-4 w-48 bg-white/5" />
+                    <Skeleton className="h-16 w-full bg-white/5 rounded-lg" />
                   </div>
-                ) : recentTodos.length === 0 ? (
+                ) : todoGroups.length === 0 ? (
                   <p className="text-sm text-white/30 py-4">No action items found in recent meetings.</p>
                 ) : (
-                  <div className="rounded-xl border border-white/10 p-4 space-y-4">
-                    {(() => {
-                      // Group todos by meeting
-                      const byMeeting = new Map<string, typeof recentTodos>();
-                      for (const todo of recentTodos) {
-                        const key = todo.meetingId || "unknown";
-                        if (!byMeeting.has(key)) byMeeting.set(key, []);
-                        byMeeting.get(key)!.push(todo);
-                      }
-                      return Array.from(byMeeting.entries()).map(([meetingId, todos]) => (
-                        <div key={meetingId}>
-                          <Link
-                            href={`/meetings/${meetingId}`}
-                            className="text-sm font-medium text-white/60 hover:text-white/80 mb-2 block"
-                          >
-                            {todos[0].meetingTitle}
-                          </Link>
-                          <ul className="space-y-1.5 ml-1">
-                            {todos.map((todo, i) => (
-                              <li key={i} className="flex items-start gap-2.5">
-                                {todo.completed ? (
-                                  <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                                ) : (
-                                  <Circle className="h-4 w-4 text-white/20 mt-0.5 shrink-0" />
-                                )}
-                                <span className="text-sm text-white/70">{todo.text}</span>
-                              </li>
-                            ))}
-                          </ul>
+                  <div className="space-y-6">
+                    {todoGroups.map((group, gi) => (
+                      <div key={gi}>
+                        <h3 className="text-sm font-bold text-white/80 mb-3">{group.date}</h3>
+                        <div className="space-y-4 ml-1">
+                          {group.meetings.map((meeting) => (
+                            <div key={meeting.id}>
+                              <Link
+                                href={`/meetings/${meeting.id}`}
+                                className="text-sm text-white/50 hover:text-white/70 mb-2 block border-b border-white/5 pb-1"
+                              >
+                                {meeting.title}
+                              </Link>
+                              <ul className="space-y-1.5">
+                                {meeting.items.map((item, i) => (
+                                  <li key={i} className="flex items-start gap-2.5 py-0.5">
+                                    <Circle className="h-3 w-3 text-white/20 mt-1 shrink-0" />
+                                    <span className="text-sm text-white/70">{item.text}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
                         </div>
-                      ));
-                    })()}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
