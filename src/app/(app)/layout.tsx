@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { FeedbackWidget } from "@/components/feedback-widget";
 import { RecordingProvider } from "@/components/recording-provider";
 import { RecordingWidget } from "@/components/recording-widget";
@@ -46,7 +47,9 @@ export default function AppLayout({
     <RecordingProvider>
       <div className="flex flex-col md:flex-row min-h-screen">
         <Sidebar />
-        <main className="flex-1 flex flex-col">{children}</main>
+        <main className="flex-1 flex flex-col">
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </main>
         <RecordingWidget />
         <FeedbackWidget />
       </div>

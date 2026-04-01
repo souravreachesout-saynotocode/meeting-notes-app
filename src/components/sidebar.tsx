@@ -20,6 +20,7 @@ import {
   LogOut,
   User,
   Users,
+  BarChart3,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -224,7 +225,16 @@ export function Sidebar() {
 
           {/* User profile */}
           {userEmail && (
-            <div className="px-3 pb-3 flex items-center justify-between">
+            <div className="px-3 pb-3 space-y-2">
+              <Link
+                href="/settings/usage"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors"
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                Usage & Costs
+              </Link>
+              <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="h-7 w-7 rounded-full bg-white/10 flex items-center justify-center shrink-0">
                   <User className="h-3.5 w-3.5 text-white/50" />
@@ -244,6 +254,7 @@ export function Sidebar() {
               >
                 <LogOut className="h-3.5 w-3.5" />
               </button>
+            </div>
             </div>
           )}
         </div>
