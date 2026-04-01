@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { FeedbackWidget } from "@/components/feedback-widget";
+import { RecordingProvider } from "@/components/recording-provider";
+import { RecordingWidget } from "@/components/recording-widget";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AppLayout({
@@ -27,11 +29,8 @@ export default function AppLayout({
     }
     checkAuth();
 
-    // Register service worker for PWA
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
-        // SW registration failed — not critical
-      });
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
   }, [router]);
 
@@ -44,10 +43,13 @@ export default function AppLayout({
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen">
-      <Sidebar />
-      <main className="flex-1 flex flex-col">{children}</main>
-      <FeedbackWidget />
-    </div>
+    <RecordingProvider>
+      <div className="flex flex-col md:flex-row min-h-screen">
+        <Sidebar />
+        <main className="flex-1 flex flex-col">{children}</main>
+        <RecordingWidget />
+        <FeedbackWidget />
+      </div>
+    </RecordingProvider>
   );
 }

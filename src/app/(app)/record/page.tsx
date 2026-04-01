@@ -1,21 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAudioRecorder } from "@/hooks/use-audio-recorder";
-import { useScreenRecorder } from "@/hooks/use-screen-recorder";
-import { createClient } from "@/lib/supabase/client";
-import { AUDIO_BUCKET } from "@/lib/constants";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useRecording } from "@/components/recording-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Mic,
   Monitor,
-  Square,
-  Pause,
-  Play,
-  Upload,
-  Loader2,
   AlertCircle,
 } from "lucide-react";
 
@@ -30,300 +22,126 @@ function formatDuration(seconds: number): string {
 }
 
 export default function RecordPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<RecordingMode>("microphone");
-  const [title, setTitle] = useState(searchParams.get("title") || "");
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-
-  const micRecorder = useAudioRecorder();
-  const screenRecorder = useScreenRecorder();
-
-  const isMic = mode === "microphone";
-  const recorder = isMic ? micRecorder : screenRecorder;
   const {
     isRecording,
-    isPaused,
-    duration,
+    audioBlobs,
+    error,
     startRecording,
-    stopRecording,
-    pauseRecording,
-    resumeRecording,
-    resetRecording,
-    error: recorderError,
-  } = recorder;
+    setRecordingTitle,
+  } = useRecording();
 
-  // Mic returns audioBlobs[], screen returns audioBlob
-  const audioBlobs = isMic ? micRecorder.audioBlobs : (screenRecorder.audioBlob ? [screenRecorder.audioBlob] : []);
+  const [mode, setMode] = useState<RecordingMode>("microphone");
+  const initialTitle = searchParams.get("title") || "";
+  const [localTitle, setLocalTitle] = useState(initialTitle);
+
+  const [showScreenOption] = useState(
+    () => typeof navigator !== "undefined" && !!navigator.mediaDevices?.getDisplayMedia
+  );
+
   const hasRecording = audioBlobs.length > 0;
 
-  const [showScreenOption, setShowScreenOption] = useState(false);
-  useEffect(() => {
-    setShowScreenOption(
-      typeof navigator !== "undefined" &&
-        !!navigator.mediaDevices?.getDisplayMedia
-    );
-  }, []);
-
-  const handleSave = async () => {
-    if (audioBlobs.length === 0) return;
-
-    setIsUploading(true);
-    setUploadError(null);
-
-    // Check if offline — save locally for later sync
-    if (!navigator.onLine) {
-      try {
-        if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            type: "QUEUE_UPLOAD",
-            payload: {
-              title: title.trim() || "Untitled Meeting",
-              recording_mode: mode,
-              duration_seconds: duration,
-              timestamp: Date.now(),
-            },
-          });
-        }
-        setIsUploading(false);
-        alert("You're offline. The recording has been saved and will sync when you're back online.");
-        router.push("/dashboard");
-        return;
-      } catch {
-        // Fall through to normal upload attempt
-      }
-    }
-
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      // Create meeting record
-      const { data: meeting, error: meetingError } = await supabase
-        .from("meetings")
-        .insert({
-          title: title.trim() || "Untitled Meeting",
-          recording_mode: mode,
-          status: "transcribing",
-          duration_seconds: duration,
-          user_id: user?.id,
-        })
-        .select()
-        .single();
-
-      if (meetingError) throw meetingError;
-
-      // Upload audio segments
-      const segmentCount = audioBlobs.length;
-      const totalSize = audioBlobs.reduce((sum, b) => sum + b.size, 0);
-      const audioPaths: string[] = [];
-
-      for (let i = 0; i < segmentCount; i++) {
-        const path = segmentCount === 1
-          ? `${user?.id}/${meeting.id}.webm`
-          : `${user?.id}/${meeting.id}_part${i + 1}.webm`;
-
-        const { error: uploadErr } = await supabase.storage
-          .from(AUDIO_BUCKET)
-          .upload(path, audioBlobs[i], { contentType: "audio/webm", upsert: true });
-
-        if (uploadErr) throw uploadErr;
-        audioPaths.push(path);
-      }
-
-      // Store first path as main audio_path, all paths in metadata
-      await supabase
-        .from("meetings")
-        .update({
-          audio_path: audioPaths[0],
-          audio_size_bytes: totalSize,
-        })
-        .eq("id", meeting.id);
-
-      // Trigger transcription with segment info
-      fetch("/api/transcribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          meeting_id: meeting.id,
-          audio_paths: audioPaths,
-        }),
-      });
-
-      router.push(`/meetings/${meeting.id}`);
-    } catch (err) {
-      setUploadError(
-        err instanceof Error ? err.message : "Failed to save recording"
-      );
-      setIsUploading(false);
-    }
+  const handleStart = () => {
+    setRecordingTitle(localTitle.trim());
+    startRecording(localTitle.trim(), mode);
   };
 
   return (
     <div className="flex-1 p-6 md:p-10 max-w-xl mx-auto w-full">
       <h1 className="text-xl font-semibold text-white mb-8">New Recording</h1>
 
-      {/* Title */}
-      <div className="mb-8">
-        <Input
-          placeholder="Meeting title (optional)"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          disabled={isRecording}
-          className="bg-white/5 border-white/10 text-white placeholder:text-white/30 h-11"
-        />
-      </div>
-
-      {/* Recording source toggle */}
-      <div className="flex gap-2 mb-10">
-        <button
-          onClick={() => !isRecording && setMode("microphone")}
-          disabled={isRecording}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            mode === "microphone"
-              ? "bg-white text-black"
-              : "bg-white/5 text-white/60 hover:bg-white/10"
-          }`}
-        >
-          <Mic className="h-4 w-4" />
-          Microphone
-        </button>
-        {showScreenOption && (
-          <button
-            onClick={() => !isRecording && setMode("screen")}
-            disabled={isRecording}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              mode === "screen"
-                ? "bg-white text-black"
-                : "bg-white/5 text-white/60 hover:bg-white/10"
-            }`}
-          >
-            <Monitor className="h-4 w-4" />
-            System Audio
-          </button>
-        )}
-      </div>
-
-      {/* Timer */}
-      <div className="flex flex-col items-center gap-6 py-12">
-        <div className="text-6xl font-light text-white tabular-nums tracking-tight">
-          {formatDuration(duration)}
+      {/* Show message if already recording */}
+      {isRecording && (
+        <div className="mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-center">
+          <p className="text-sm text-red-400 font-medium">Recording in progress</p>
+          <p className="text-xs text-white/40 mt-1">
+            Use the floating widget (bottom-right) to control the recording.
+            You can browse other pages while recording.
+          </p>
         </div>
+      )}
 
-        {/* Status */}
-        {isRecording && (
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex items-center gap-2">
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  isPaused ? "bg-yellow-500" : "bg-red-500 animate-pulse"
-                }`}
-              />
-              <span className="text-sm text-white/50">
-                {isPaused ? "Paused" : "Recording"}
-              </span>
-            </div>
-            <span className="text-xs text-white/20">
-              Max 3 hours · {formatDuration(10800 - duration)} remaining
-            </span>
+      {hasRecording && !isRecording && (
+        <div className="mb-8 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+          <p className="text-sm text-emerald-400 font-medium">Recording complete</p>
+          <p className="text-xs text-white/40 mt-1">
+            Use the floating widget (bottom-right) to save or discard.
+          </p>
+        </div>
+      )}
+
+      {/* Title */}
+      {!isRecording && !hasRecording && (
+        <>
+          <div className="mb-8">
+            <Input
+              placeholder="Meeting title (optional)"
+              value={localTitle}
+              onChange={(e) => setLocalTitle(e.target.value)}
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/30 h-11"
+            />
           </div>
-        )}
-        {hasRecording && !isRecording && (
-          <span className="text-sm text-white/50">Recording complete</span>
-        )}
 
-        {/* Controls */}
-        <div className="flex gap-3">
-          {!isRecording && !hasRecording && (
+          {/* Recording source toggle */}
+          <div className="flex gap-2 mb-10">
+            <button
+              onClick={() => setMode("microphone")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                mode === "microphone"
+                  ? "bg-white text-black"
+                  : "bg-white/5 text-white/60 hover:bg-white/10"
+              }`}
+            >
+              <Mic className="h-4 w-4" />
+              Microphone
+            </button>
+            {showScreenOption && (
+              <button
+                onClick={() => setMode("screen")}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  mode === "screen"
+                    ? "bg-white text-black"
+                    : "bg-white/5 text-white/60 hover:bg-white/10"
+                }`}
+              >
+                <Monitor className="h-4 w-4" />
+                System Audio
+              </button>
+            )}
+          </div>
+
+          {/* Timer placeholder + Start button */}
+          <div className="flex flex-col items-center gap-6 py-12">
+            <div className="text-6xl font-light text-white/20 tabular-nums tracking-tight">
+              {formatDuration(0)}
+            </div>
+
             <Button
               size="lg"
-              onClick={startRecording}
+              onClick={handleStart}
               className="bg-white text-black hover:bg-white/90 h-12 px-8"
             >
               <Mic className="mr-2 h-5 w-5" />
               Start Recording
             </Button>
-          )}
 
-          {isRecording && (
-            <>
-              {isPaused ? (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={resumeRecording}
-                  className="border-white/20 text-white hover:bg-white/10 h-12"
-                >
-                  <Play className="mr-2 h-5 w-5" />
-                  Resume
-                </Button>
-              ) : (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={pauseRecording}
-                  className="border-white/20 text-white hover:bg-white/10 h-12"
-                >
-                  <Pause className="mr-2 h-5 w-5" />
-                  Pause
-                </Button>
-              )}
-              <Button
-                size="lg"
-                onClick={stopRecording}
-                className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border-0 h-12"
-              >
-                <Square className="mr-2 h-5 w-5" />
-                Stop
-              </Button>
-            </>
-          )}
-
-          {hasRecording && !isRecording && (
-            <>
-              <Button
-                size="lg"
-                onClick={handleSave}
-                disabled={isUploading}
-                className="bg-white text-black hover:bg-white/90 h-12 px-8"
-              >
-                {isUploading ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                  <Upload className="mr-2 h-5 w-5" />
-                )}
-                {isUploading ? "Saving..." : "Save & Transcribe"}
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={resetRecording}
-                disabled={isUploading}
-                className="border-white/20 text-white hover:bg-white/10 h-12"
-              >
-                Discard
-              </Button>
-            </>
-          )}
-        </div>
-
-        {/* Errors */}
-        {(recorderError || uploadError) && (
-          <div className="flex items-center gap-2 text-red-400 text-sm">
-            <AlertCircle className="h-4 w-4" />
-            {recorderError || uploadError}
+            {mode === "screen" && (
+              <p className="text-sm text-white/30 text-center max-w-sm">
+                Select a browser tab and check &ldquo;Share tab audio&rdquo;.
+                Works best in Chrome/Edge on desktop.
+              </p>
+            )}
           </div>
-        )}
+        </>
+      )}
 
-        {/* Hint */}
-        {mode === "screen" && !isRecording && !hasRecording && (
-          <p className="text-sm text-white/30 text-center max-w-sm">
-            Select a browser tab and check &ldquo;Share tab audio&rdquo;.
-            Works best in Chrome/Edge on desktop.
-          </p>
-        )}
-      </div>
+      {/* Errors */}
+      {error && (
+        <div className="flex items-center justify-center gap-2 text-red-400 text-sm mt-4">
+          <AlertCircle className="h-4 w-4" />
+          {error}
+        </div>
+      )}
     </div>
   );
 }
