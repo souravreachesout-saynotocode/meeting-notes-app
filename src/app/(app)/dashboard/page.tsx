@@ -22,18 +22,70 @@ import {
   Circle,
   Calendar,
   Video,
+  UserPlus,
 } from "lucide-react";
+import { InviteDialog } from "@/components/invite-dialog";
 
-const statusIndicator: Record<string, string> = {
-  recording: "bg-red-500",
-  transcribing: "bg-yellow-500",
-  summarizing: "bg-blue-500",
-  completed: "bg-emerald-500",
-  error: "bg-red-500",
-};
 
 function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(" ");
+}
+
+function MeetingSection({
+  label,
+  meetings,
+  onDragStart,
+  onDragEnd,
+}: {
+  label: string;
+  meetings: Meeting[];
+  onDragStart: (id: string) => void;
+  onDragEnd: () => void;
+}) {
+  return (
+    <div className="mb-8">
+      <h2 className="text-sm font-medium text-white/40 mb-3">{label}</h2>
+      <div className="space-y-1">
+        {meetings.map((meeting) => (
+          <div
+            key={meeting.id}
+            className="flex items-center group"
+            draggable
+            onDragStart={() => onDragStart(meeting.id)}
+            onDragEnd={onDragEnd}
+          >
+            <div className="hidden md:flex w-6 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
+              <GripVertical className="h-3.5 w-3.5 text-white/20" />
+            </div>
+            <Link
+              href={`/meetings/${meeting.id}`}
+              className="flex-1 flex items-center gap-3 md:gap-4 py-3 px-2 hover:bg-white/5 rounded-lg transition-colors"
+            >
+              <FileText className="h-5 w-5 text-white/15 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white/90 truncate">
+                  {meeting.title}
+                </p>
+                <p className="text-xs text-white/40">Me</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {(meeting.status === "transcribing" || meeting.status === "summarizing") ? (
+                  <Loader2 className="h-3.5 w-3.5 text-white/30 animate-spin" />
+                ) : meeting.status === "error" ? (
+                  <AlertCircle className="h-3.5 w-3.5 text-red-400" />
+                ) : (
+                  <Lock className="h-3 w-3 text-white/20" />
+                )}
+                <span className="text-xs text-white/40">
+                  {format(parseISO(meeting.created_at), "HH:mm")}
+                </span>
+              </div>
+            </Link>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function groupMeetingsByDate(meetings: Meeting[]) {
@@ -98,6 +150,7 @@ export default function DashboardPage() {
   const [showFolderDrop, setShowFolderDrop] = useState(false);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [calendarError, setCalendarError] = useState<string | null>(null);
+  const [showInvite, setShowInvite] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -220,23 +273,30 @@ export default function DashboardPage() {
   };
 
   const todayMeetings = meetings.filter((m) => isToday(parseISO(m.created_at)));
-  const upcomingGroups = groupMeetingsByDate(meetings);
+  const yesterdayMeetings = meetings.filter((m) => isYesterday(parseISO(m.created_at)));
+  const olderMeetings = meetings.filter((m) => !isToday(parseISO(m.created_at)) && !isYesterday(parseISO(m.created_at)));
+  const olderGroups = groupMeetingsByDate(olderMeetings);
 
   return (
     <div className="flex-1 flex flex-col">
       <div className="flex-1 p-4 md:p-10 max-w-4xl w-full">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 md:mb-8">
-          <div />
-          <div className="flex items-center gap-3">
-            <Link href="/record">
-              <Button size="sm" className="bg-white text-black hover:bg-white/90 text-sm font-medium">
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Quick note</span>
-                <span className="sm:hidden">New</span>
-              </Button>
-            </Link>
-          </div>
+        <div className="flex items-center justify-end gap-3 mb-6 md:mb-8">
+          <Button
+            size="sm"
+            onClick={() => setShowInvite(true)}
+            className="bg-white/10 hover:bg-white/15 text-white border-0 text-sm"
+          >
+            <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+            Invite
+          </Button>
+          <Link href="/record">
+            <Button size="sm" className="bg-white text-black hover:bg-white/90 text-sm font-medium">
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Quick note</span>
+              <span className="sm:hidden">New</span>
+            </Button>
+          </Link>
         </div>
 
         {loading ? (
@@ -334,113 +394,36 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Day-wise calendar view */}
-            {upcomingGroups.length > 0 && (
-              <div className="mb-8 md:mb-10">
-                <div className="rounded-xl border border-white/10 overflow-hidden">
-                  {upcomingGroups.map((group, gi) => (
-                    <div key={group.label}>
-                      <div
-                        className={cn(
-                          "flex",
-                          gi > 0 && "border-t border-dashed border-white/10"
-                        )}
-                      >
-                        {/* Date column */}
-                        <div className="w-16 md:w-24 shrink-0 py-3 md:py-4 px-2 md:px-4 flex flex-col items-center justify-start">
-                          <span className="text-xl md:text-2xl font-light text-white/90">
-                            {group.dayNum}
-                          </span>
-                          <span className="text-[10px] md:text-[11px] text-white/40 uppercase">
-                            {group.month.slice(0, 3)}
-                          </span>
-                          <span className="text-[10px] md:text-[11px] text-white/30">
-                            {group.dayName}
-                          </span>
-                        </div>
-
-                        {/* Meetings column */}
-                        <div className="flex-1 py-1 md:py-2 border-l border-white/10">
-                          {group.meetings.map((meeting) => (
-                            <div
-                              key={meeting.id}
-                              className="flex items-center group"
-                              draggable
-                              onDragStart={() => handleDragStart(meeting.id)}
-                              onDragEnd={handleDragEnd}
-                            >
-                              <div className="hidden md:flex w-6 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
-                                <GripVertical className="h-3.5 w-3.5 text-white/20" />
-                              </div>
-                              <Link
-                                href={`/meetings/${meeting.id}`}
-                                className="flex-1 flex items-center gap-3 px-3 md:px-4 py-2.5 hover:bg-white/5 transition-colors min-w-0"
-                              >
-                                <div
-                                  className={`w-0.5 h-8 rounded-full shrink-0 ${statusIndicator[meeting.status] || "bg-white/20"}`}
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-white/90 truncate">
-                                    {meeting.title}
-                                  </p>
-                                  <p className="text-xs text-white/40">
-                                    {format(parseISO(meeting.created_at), "HH:mm")}
-                                    {meeting.duration_seconds &&
-                                      ` – ${format(
-                                        new Date(
-                                          parseISO(meeting.created_at).getTime() +
-                                            meeting.duration_seconds * 1000
-                                        ),
-                                        "HH:mm"
-                                      )}`}
-                                  </p>
-                                </div>
-                                {(meeting.status === "transcribing" || meeting.status === "summarizing") && (
-                                  <Loader2 className="h-3.5 w-3.5 text-white/30 animate-spin shrink-0" />
-                                )}
-                                {meeting.status === "error" && (
-                                  <AlertCircle className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                                )}
-                              </Link>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Today section */}
+            {/* Note-style meeting cards: Today */}
             {todayMeetings.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-sm font-medium text-white/40 mb-4">Today</h2>
-                <div className="space-y-1">
-                  {todayMeetings.map((meeting) => (
-                    <Link
-                      key={`today-${meeting.id}`}
-                      href={`/meetings/${meeting.id}`}
-                      className="flex items-center gap-3 md:gap-4 py-3 px-2 hover:bg-white/5 rounded-lg transition-colors"
-                    >
-                      <FileText className="h-5 w-5 text-white/20 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white/90 truncate">
-                          {meeting.title}
-                        </p>
-                        <p className="text-xs text-white/40">Me</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Lock className="h-3 w-3 text-white/20" />
-                        <span className="text-xs text-white/40">
-                          {format(parseISO(meeting.created_at), "HH:mm")}
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+              <MeetingSection
+                label="Today"
+                meetings={todayMeetings}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              />
             )}
+
+            {/* Yesterday */}
+            {yesterdayMeetings.length > 0 && (
+              <MeetingSection
+                label="Yesterday"
+                meetings={yesterdayMeetings}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              />
+            )}
+
+            {/* Older meetings grouped by date */}
+            {olderGroups.map((group) => (
+              <MeetingSection
+                key={group.label}
+                label={group.label}
+                meetings={group.meetings}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              />
+            ))}
 
             {/* Recent Todos Panel */}
             {showTodos && (
@@ -459,26 +442,38 @@ export default function DashboardPage() {
                 ) : recentTodos.length === 0 ? (
                   <p className="text-sm text-white/30 py-4">No action items found in recent meetings.</p>
                 ) : (
-                  <div className="space-y-1 rounded-xl border border-white/10 p-3">
-                    {recentTodos.map((todo, i) => (
-                      <div key={i} className="flex items-start gap-3 py-2 px-2 rounded-lg hover:bg-white/5">
-                        {todo.completed ? (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                        ) : (
-                          <Circle className="h-4 w-4 text-white/20 mt-0.5 shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white/80">{todo.text}</p>
+                  <div className="rounded-xl border border-white/10 p-4 space-y-4">
+                    {(() => {
+                      // Group todos by meeting
+                      const byMeeting = new Map<string, typeof recentTodos>();
+                      for (const todo of recentTodos) {
+                        const key = todo.meetingId || "unknown";
+                        if (!byMeeting.has(key)) byMeeting.set(key, []);
+                        byMeeting.get(key)!.push(todo);
+                      }
+                      return Array.from(byMeeting.entries()).map(([meetingId, todos]) => (
+                        <div key={meetingId}>
                           <Link
-                            href={`/meetings/${todo.meetingId}`}
-                            className="text-xs text-white/30 hover:text-white/50"
+                            href={`/meetings/${meetingId}`}
+                            className="text-sm font-medium text-white/60 hover:text-white/80 mb-2 block"
                           >
-                            {todo.meetingTitle}
-                            {todo.assignee && ` · ${todo.assignee}`}
+                            {todos[0].meetingTitle}
                           </Link>
+                          <ul className="space-y-1.5 ml-1">
+                            {todos.map((todo, i) => (
+                              <li key={i} className="flex items-start gap-2.5">
+                                {todo.completed ? (
+                                  <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                                ) : (
+                                  <Circle className="h-4 w-4 text-white/20 mt-0.5 shrink-0" />
+                                )}
+                                <span className="text-sm text-white/70">{todo.text}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                 )}
               </div>
@@ -570,6 +565,9 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Invite dialog */}
+      {showInvite && <InviteDialog onClose={() => setShowInvite(false)} />}
     </div>
   );
 }
