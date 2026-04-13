@@ -118,7 +118,7 @@ export function RecordingWidget() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-[100] w-80 bg-[#1e1e1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+    <div className="fixed bottom-5 right-5 z-[100] w-80 bg-[#1c1d22] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 bg-white/5">
         <div className="flex items-center gap-2">

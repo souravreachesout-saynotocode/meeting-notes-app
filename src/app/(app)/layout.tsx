@@ -37,7 +37,7 @@ export default function AppLayout({
 
   if (!checked) {
     return (
-      <div className="min-h-screen bg-[#1e1e1e] flex items-center justify-center">
+      <div className="min-h-screen bg-[#131418] flex items-center justify-center">
         <div className="h-6 w-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
       </div>
     );

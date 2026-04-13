@@ -497,7 +497,7 @@ export default function DashboardPage() {
 
       {/* Bottom bar — Granola style */}
       {meetings.length > 0 && (
-        <div className="sticky bottom-0 z-30 border-t border-white/5 bg-[#1e1e1e] px-4 md:px-10 py-3">
+        <div className="sticky bottom-0 z-30 border-t border-white/5 bg-[#131418]/95 backdrop-blur-sm px-4 md:px-10 py-3">
           <div className="max-w-4xl flex items-center justify-between">
             <p className="text-xs text-white/20 hidden md:block">
               Drag & drop note to organize

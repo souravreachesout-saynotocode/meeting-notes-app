@@ -21,6 +21,7 @@ import {
   User,
   Users,
   BarChart3,
+  Sparkles,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -73,7 +74,7 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile header */}
-      <div className="md:hidden flex items-center justify-between border-b border-white/10 px-4 h-14 bg-[#1a1a1a]">
+      <div className="md:hidden flex items-center justify-between border-b border-white/10 px-4 h-14 bg-[#0f1014]">
         <Link href="/dashboard" className="font-bold text-lg text-white">
           MeetScribe
         </Link>
@@ -101,7 +102,7 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed md:static z-50 top-0 left-0 h-full w-56 bg-[#1a1a1a] text-white flex flex-col transition-transform duration-200 border-r border-white/5",
+          "fixed md:static z-50 top-0 left-0 h-full w-56 bg-[#0f1014] text-white flex flex-col transition-transform duration-200 border-r border-white/5",
           open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
@@ -226,6 +227,14 @@ export function Sidebar() {
           {/* User profile */}
           {userEmail && (
             <div className="px-3 pb-3 space-y-2">
+              <Link
+                href="/landing"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                About MeetScribe
+              </Link>
               <Link
                 href="/settings/usage"
                 onClick={() => setOpen(false)}
